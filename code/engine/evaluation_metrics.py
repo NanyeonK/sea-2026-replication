@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from typing import Tuple, Dict, List, Optional
+from typing import Tuple, Dict, List
 from scipy import stats
 import warnings
 
@@ -10,15 +10,12 @@ import warnings
 # Core Metrics
 # ============================================================================
 
+
 class EvaluationMetrics:
     """Calculate out-of-sample forecast error metrics."""
 
     @staticmethod
-    def calculate_oos_r2(
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        y_mean: float = None
-    ) -> float:
+    def calculate_oos_r2(y_true: np.ndarray, y_pred: np.ndarray, y_mean: float = None) -> float:
         """
         Calculate out-of-sample R² with explicit formula.
 
@@ -60,10 +57,7 @@ class EvaluationMetrics:
         return 1 - (ss_res / ss_tot)
 
     @staticmethod
-    def calculate_rmse(
-        y_true: np.ndarray,
-        y_pred: np.ndarray
-    ) -> float:
+    def calculate_rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         """
         Calculate Root Mean Squared Error.
 
@@ -87,10 +81,7 @@ class EvaluationMetrics:
         return np.sqrt(np.mean((y_true - y_pred) ** 2))
 
     @staticmethod
-    def calculate_mae(
-        y_true: np.ndarray,
-        y_pred: np.ndarray
-    ) -> float:
+    def calculate_mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         """
         Calculate Mean Absolute Error.
 
@@ -114,11 +105,7 @@ class EvaluationMetrics:
         return np.mean(np.abs(y_true - y_pred))
 
     @staticmethod
-    def calculate_mape(
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        epsilon: float = 1e-10
-    ) -> float:
+    def calculate_mape(y_true: np.ndarray, y_pred: np.ndarray, epsilon: float = 1e-10) -> float:
         """
         Calculate Mean Absolute Percentage Error.
 
@@ -153,10 +140,7 @@ class EvaluationMetrics:
         return np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
 
     def calculate_all_metrics(
-        self,
-        y_true: np.ndarray,
-        y_pred: np.ndarray,
-        y_mean: float = None
+        self, y_true: np.ndarray, y_pred: np.ndarray, y_mean: float = None
     ) -> Dict[str, float]:
         """
         Calculate all metrics at once.
@@ -176,22 +160,24 @@ class EvaluationMetrics:
             Dictionary with all metrics
         """
         return {
-            'oos_r2': self.calculate_oos_r2(y_true, y_pred, y_mean),
-            'rmse': self.calculate_rmse(y_true, y_pred),
-            'mae': self.calculate_mae(y_true, y_pred),
-            'mape': self.calculate_mape(y_true, y_pred)
+            "oos_r2": self.calculate_oos_r2(y_true, y_pred, y_mean),
+            "rmse": self.calculate_rmse(y_true, y_pred),
+            "mae": self.calculate_mae(y_true, y_pred),
+            "mape": self.calculate_mape(y_true, y_pred),
         }
+
 
 # ============================================================================
 # Diebold-Mariano Test with HAC Standard Errors
 # ============================================================================
+
 
 def diebold_mariano_test_hac(
     errors_1: np.ndarray,
     errors_2: np.ndarray,
     h: int = 1,
     max_lag: int = None,
-    loss: str = 'squared'
+    loss: str = "squared",
 ) -> Tuple[float, float, float]:
     """
     Diebold-Mariano test for equal predictive accuracy with HAC correction.
@@ -237,11 +223,11 @@ def diebold_mariano_test_hac(
         warnings.warn(f"Small sample size ({n}), DM test may be unreliable")
 
     # Calculate loss differential
-    if loss == 'squared':
+    if loss == "squared":
         # For MSE comparison: d_t = e1_t^2 - e2_t^2
         # When errors are already MSE, just take difference
         d = errors_1 - errors_2
-    elif loss == 'absolute':
+    elif loss == "absolute":
         d = np.abs(errors_1) - np.abs(errors_2)
     else:
         raise ValueError(f"Unknown loss function: {loss}")
@@ -291,9 +277,7 @@ def diebold_mariano_test_hac(
 
 
 def run_all_dm_tests(
-    window_results,
-    horizons: List[int] = None,
-    models: List[str] = None
+    window_results, horizons: List[int] = None, models: List[str] = None
 ) -> pd.DataFrame:
     """
     Run DM tests for all model pairs at each horizon.
@@ -317,7 +301,7 @@ def run_all_dm_tests(
         horizons = [1, 3, 6, 12]
 
     if models is None:
-        models = ['H1', 'H2', 'H3', 'H4', 'Ridge', 'XGBoost']
+        models = ["H1", "H2", "H3", "H4", "Ridge", "XGBoost"]
 
     results = []
 
@@ -326,27 +310,32 @@ def run_all_dm_tests(
             for j, m2 in enumerate(models):
                 if i < j:  # Upper triangle only (symmetric)
                     try:
-                        mse1, mse2, common_windows = \
-                            window_results.get_forecast_errors_for_dm_test(m1, m2, h)
+                        mse1, mse2, common_windows = window_results.get_forecast_errors_for_dm_test(
+                            m1, m2, h
+                        )
 
                         if len(common_windows) < 5:
                             continue
 
-                        dm_stat, hac_se, p_val = diebold_mariano_test_hac(
-                            mse1, mse2, h=h
-                        )
+                        dm_stat, hac_se, p_val = diebold_mariano_test_hac(mse1, mse2, h=h)
 
-                        results.append({
-                            'Horizon': h,
-                            'Model_1': m1,
-                            'Model_2': m2,
-                            'DM_Statistic': round(dm_stat, 4),
-                            'HAC_SE': round(hac_se, 6),
-                            'P_Value': round(p_val, 4),
-                            'Significance': _get_significance_stars(p_val),
-                            'N_Windows': len(common_windows),
-                            'Better_Model': m1 if dm_stat < 0 else m2 if dm_stat > 0 else 'Equal'
-                        })
+                        results.append(
+                            {
+                                "Horizon": h,
+                                "Model_1": m1,
+                                "Model_2": m2,
+                                "DM_Statistic": round(dm_stat, 4),
+                                "HAC_SE": round(hac_se, 6),
+                                "P_Value": round(p_val, 4),
+                                "Significance": _get_significance_stars(p_val),
+                                "N_Windows": len(common_windows),
+                                "Better_Model": m1
+                                if dm_stat < 0
+                                else m2
+                                if dm_stat > 0
+                                else "Equal",
+                            }
+                        )
 
                     except Exception as e:
                         warnings.warn(f"DM test failed for {m1} vs {m2} h{h}: {e}")
@@ -369,22 +358,22 @@ def _get_significance_stars(p_value: float) -> str:
         '***' for p < 0.01, '**' for p < 0.05, '*' for p < 0.10, '' otherwise
     """
     if p_value < 0.01:
-        return '***'
+        return "***"
     elif p_value < 0.05:
-        return '**'
+        return "**"
     elif p_value < 0.10:
-        return '*'
+        return "*"
     else:
-        return ''
+        return ""
+
 
 # ============================================================================
 # Model Comparison Utilities
 # ============================================================================
 
+
 def create_dm_test_matrix(
-    dm_results: pd.DataFrame,
-    horizon: int,
-    models: List[str] = None
+    dm_results: pd.DataFrame, horizon: int, models: List[str] = None
 ) -> pd.DataFrame:
     """
     Create a matrix representation of DM test results.
@@ -404,22 +393,18 @@ def create_dm_test_matrix(
         Square matrix with DM statistics
     """
     if models is None:
-        models = ['H1', 'H2', 'H3', 'H4', 'Ridge', 'XGBoost']
+        models = ["H1", "H2", "H3", "H4", "Ridge", "XGBoost"]
 
     # Filter by horizon
-    df = dm_results[dm_results['Horizon'] == horizon]
+    df = dm_results[dm_results["Horizon"] == horizon]
 
     # Create matrix
-    matrix = pd.DataFrame(
-        index=models,
-        columns=models,
-        data=''
-    )
+    matrix = pd.DataFrame(index=models, columns=models, data="")
 
     for _, row in df.iterrows():
-        m1, m2 = row['Model_1'], row['Model_2']
-        dm_stat = row['DM_Statistic']
-        sig = row['Significance']
+        m1, m2 = row["Model_1"], row["Model_2"]
+        dm_stat = row["DM_Statistic"]
+        sig = row["Significance"]
 
         # Upper triangle: Model_1 vs Model_2
         matrix.loc[m1, m2] = f"{dm_stat:.2f}{sig}"
@@ -428,15 +413,12 @@ def create_dm_test_matrix(
 
     # Diagonal
     for m in models:
-        matrix.loc[m, m] = '-'
+        matrix.loc[m, m] = "-"
 
     return matrix
 
 
-def summarize_model_rankings(
-    dm_results: pd.DataFrame,
-    models: List[str] = None
-) -> pd.DataFrame:
+def summarize_model_rankings(dm_results: pd.DataFrame, models: List[str] = None) -> pd.DataFrame:
     """
     Summarize model rankings based on DM test results.
 
@@ -453,31 +435,31 @@ def summarize_model_rankings(
         Model rankings with win/loss counts
     """
     if models is None:
-        models = ['H1', 'H2', 'H3', 'H4', 'Ridge', 'XGBoost']
+        models = ["H1", "H2", "H3", "H4", "Ridge", "XGBoost"]
 
     # Initialize counters
-    rankings = {m: {'wins': 0, 'losses': 0, 'ties': 0} for m in models}
+    rankings = {m: {"wins": 0, "losses": 0, "ties": 0} for m in models}
 
     for _, row in dm_results.iterrows():
-        m1, m2 = row['Model_1'], row['Model_2']
-        dm_stat = row['DM_Statistic']
-        p_val = row['P_Value']
+        m1, m2 = row["Model_1"], row["Model_2"]
+        dm_stat = row["DM_Statistic"]
+        p_val = row["P_Value"]
 
         if p_val < 0.05:  # Significant difference
             if dm_stat < 0:
-                rankings[m1]['wins'] += 1
-                rankings[m2]['losses'] += 1
+                rankings[m1]["wins"] += 1
+                rankings[m2]["losses"] += 1
             else:
-                rankings[m2]['wins'] += 1
-                rankings[m1]['losses'] += 1
+                rankings[m2]["wins"] += 1
+                rankings[m1]["losses"] += 1
         else:
-            rankings[m1]['ties'] += 1
-            rankings[m2]['ties'] += 1
+            rankings[m1]["ties"] += 1
+            rankings[m2]["ties"] += 1
 
     # Convert to DataFrame
     df = pd.DataFrame(rankings).T
-    df['total_comparisons'] = df['wins'] + df['losses'] + df['ties']
-    df['win_rate'] = (df['wins'] / df['total_comparisons'] * 100).round(1)
-    df = df.sort_values('wins', ascending=False)
+    df["total_comparisons"] = df["wins"] + df["losses"] + df["ties"]
+    df["win_rate"] = (df["wins"] / df["total_comparisons"] * 100).round(1)
+    df = df.sort_values("wins", ascending=False)
 
     return df

@@ -3,6 +3,7 @@
 Importing this module starts a log in output/logs/. Use seed(value) to set
 and record the NumPy and Python random seeds.
 """
+
 from __future__ import annotations
 
 import atexit
@@ -28,10 +29,22 @@ _LOG = LOG_DIR / f"{_STEM}_{_START_STAMP.strftime('%Y%m%dT%H%M%SZ')}.log"
 _inputs: list[Path] = []
 _seeds: list[tuple[str, int]] = []
 
-_OUTPUT_DIRECTORIES = [PROJECT_ROOT / "output", PROJECT_ROOT / "data" / "derived", PROJECT_ROOT / "docs"]
+_OUTPUT_DIRECTORIES = [PROJECT_ROOT / "output", PROJECT_ROOT / "data" / "derived"]
 
-_DEPENDENCIES = ["pandas", "numpy", "scipy", "sklearn", "statsmodels", "xgboost", "shap",
-             "matplotlib", "geopandas", "joblib", "yaml", "pyarrow"]
+_DEPENDENCIES = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "sklearn",
+    "statsmodels",
+    "xgboost",
+    "shap",
+    "matplotlib",
+    "geopandas",
+    "joblib",
+    "yaml",
+    "pyarrow",
+]
 
 
 def sha256(path: Path) -> str:
@@ -52,22 +65,38 @@ def _rel(p: Path) -> str:
 def _git() -> str:
     """Return the repository commit and working-tree status, when available."""
     try:
-        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=PROJECT_ROOT,
-                             capture_output=True, text=True, timeout=10)
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
         if top.returncode != 0 or Path(top.stdout.strip()).resolve() != PROJECT_ROOT:
             return "not a standalone git repository"
-        rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT,
-                             capture_output=True, text=True, timeout=10)
-        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=PROJECT_ROOT,
-                               capture_output=True, text=True, timeout=20)
+        rev = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
         state = "dirty" if dirty.stdout.strip() else "clean"
         return f"{rev.stdout.strip()} ({state})"
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         return f"unavailable: {exc}"
 
 
 def _packages() -> list[str]:
     import importlib
+
     rows = []
     for name in _DEPENDENCIES:
         try:
@@ -96,9 +125,11 @@ def register_input(path: Path) -> None:
 def seed(value: int, *, label: str = "global") -> int:
     """Set and record the NumPy and Python random seeds."""
     import random
+
     random.seed(value)
     try:
         import numpy as np
+
         np.random.seed(value)
     except ImportError:
         pass
@@ -113,18 +144,14 @@ def _write_header() -> None:
         f"started_utc      : {_START_STAMP.isoformat()}",
         f"script           : {_rel(_SCRIPT)}",
         f"argv             : {' '.join(sys.argv[1:]) or '(none)'}",
-
         f"cwd              : {_rel(Path.cwd())}",
         "",
         "## environment",
-
         f"    python       {sys.version.split()[0]}",
         f"    os           {platform.system()} {platform.release()}",
-        f"    machine      {platform.machine()}, {os.cpu_count()} logical CPUs, "
-        f"{_memory()} RAM",
+        f"    machine      {platform.machine()}, {os.cpu_count()} logical CPUs, {_memory()} RAM",
         f"    git          {_git()}",
-        f"    lockfile     requirements.txt sha256 "
-        f"{sha256(lock) if lock.exists() else 'MISSING'}",
+        f"    lockfile     requirements.txt sha256 {sha256(lock) if lock.exists() else 'MISSING'}",
         "",
         "## packages",
         *_packages(),
@@ -136,31 +163,40 @@ def _write_header() -> None:
 def _write_footer() -> None:
     elapsed = time.time() - _START_WALL
     lines = ["## seeds"]
-    lines += ([f"    {lab:<14} {val}" for lab, val in _seeds]
-              or ["    (this script draws no randomness)"])
+    lines += [f"    {lab:<14} {val}" for lab, val in _seeds] or [
+        "    (this script draws no randomness)"
+    ]
 
     lines += ["", "## inputs (sha256)"]
-    lines += ([f"    {sha256(p)}  {_rel(p)}" for p in _inputs if p.exists()]
-              or ["    (none declared)"])
+    lines += [f"    {sha256(p)}  {_rel(p)}" for p in _inputs if p.exists()] or [
+        "    (none declared)"
+    ]
 
     written: list[Path] = []
     for root in _OUTPUT_DIRECTORIES:
         if not root.exists():
             continue
         for p in root.rglob("*"):
-
-            if p.is_file() and p != _LOG and p.suffix != ".pyc" \
-                    and p.parent != LOG_DIR \
-                    and p.stat().st_mtime > _START_WALL:
+            if (
+                p.is_file()
+                and p != _LOG
+                and p.suffix != ".pyc"
+                and p.parent != LOG_DIR
+                and p.stat().st_mtime > _START_WALL
+            ):
                 written.append(p)
     lines += ["", "## outputs written by this run (sha256)"]
-    lines += ([f"    {sha256(p)}  {_rel(p)}" for p in sorted(written)]
-              or ["    (none)"])
+    lines += [f"    {sha256(p)}  {_rel(p)}" for p in sorted(written)] or ["    (none)"]
 
-    lines += ["", f"elapsed_seconds  : {elapsed:.2f}",
-              f"finished_utc     : {datetime.now(timezone.utc).isoformat()}", ""]
+    lines += [
+        "",
+        f"elapsed_seconds  : {elapsed:.2f}",
+        f"finished_utc     : {datetime.now(timezone.utc).isoformat()}",
+        "",
+    ]
     with _LOG.open("a", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
+
 
 _write_header()
 atexit.register(_write_footer)

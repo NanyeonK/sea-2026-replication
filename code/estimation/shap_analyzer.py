@@ -9,6 +9,7 @@ import gc
 # Try to import SHAP
 try:
     import shap
+
     SHAP_AVAILABLE = True
 except ImportError:
     SHAP_AVAILABLE = False
@@ -17,6 +18,7 @@ except ImportError:
 # Try to import torch for GPU memory management
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
@@ -24,6 +26,7 @@ except ImportError:
 # ============================================================================
 # SHAP Analyzer
 # ============================================================================
+
 
 class SHAPAnalyzer:
     """
@@ -46,11 +49,7 @@ class SHAPAnalyzer:
         Regional SHAP breakdown
     """
 
-    def __init__(
-        self,
-        sample_size: int = 1000,
-        window_interval: int = 6
-    ):
+    def __init__(self, sample_size: int = 1000, window_interval: int = 6):
         if not SHAP_AVAILABLE:
             raise ImportError("SHAP package required for this module")
 
@@ -61,11 +60,7 @@ class SHAPAnalyzer:
         self.feature_names = []
 
     def calculate_shap_values(
-        self,
-        model,
-        X_train: pd.DataFrame,
-        X_test: pd.DataFrame,
-        window_id: int
+        self, model, X_train: pd.DataFrame, X_test: pd.DataFrame, window_id: int
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate SHAP values for a window.
@@ -111,12 +106,12 @@ class SHAPAnalyzer:
             mean_abs_shap = np.abs(shap_values).mean(axis=0)
 
             result = {
-                'window_id': window_id,
-                'feature_names': self.feature_names,
-                'mean_abs_shap': mean_abs_shap,
-                'shap_values': shap_values,  # Full values for detailed analysis
-                'n_samples': n_test,
-                'base_value': explainer.expected_value
+                "window_id": window_id,
+                "feature_names": self.feature_names,
+                "mean_abs_shap": mean_abs_shap,
+                "shap_values": shap_values,  # Full values for detailed analysis
+                "n_samples": n_test,
+                "base_value": explainer.expected_value,
             }
 
             # Store for temporal analysis
@@ -135,8 +130,8 @@ class SHAPAnalyzer:
         X_test: pd.DataFrame,
         df_test: pd.DataFrame,
         window_id: int,
-        district_col: str = 'district',
-        top_n_districts: int = 5
+        district_col: str = "district",
+        top_n_districts: int = 5,
     ) -> Optional[Dict[str, Any]]:
         """
         Calculate SHAP values broken down by district.
@@ -191,15 +186,12 @@ class SHAPAnalyzer:
                 mean_abs_shap = np.abs(shap_values).mean(axis=0)
 
                 regional_shap[district] = {
-                    'mean_abs_shap': mean_abs_shap,
-                    'n_samples': n_sample,
-                    'top_features': self._get_top_features(mean_abs_shap, n=5)
+                    "mean_abs_shap": mean_abs_shap,
+                    "n_samples": n_sample,
+                    "top_features": self._get_top_features(mean_abs_shap, n=5),
                 }
 
-            result = {
-                'window_id': window_id,
-                'districts': regional_shap
-            }
+            result = {"window_id": window_id, "districts": regional_shap}
 
             # Store
             self.regional_results[window_id] = result
@@ -237,7 +229,7 @@ class SHAPAnalyzer:
         rank_matrix = np.zeros((n_windows, n_features))
 
         for i, result in enumerate(self.window_results):
-            importance = result['mean_abs_shap']
+            importance = result["mean_abs_shap"]
             importance_matrix[i, :] = importance
             # Calculate ranks (1 = most important)
             rank_matrix[i, :] = n_features - np.argsort(np.argsort(importance))
@@ -248,19 +240,21 @@ class SHAPAnalyzer:
             imp = importance_matrix[:, j]
             ranks = rank_matrix[:, j]
 
-            stability.append({
-                'feature': feature,
-                'mean_importance': np.mean(imp),
-                'std_importance': np.std(imp),
-                'cv': np.std(imp) / np.mean(imp) if np.mean(imp) > 0 else np.nan,
-                'rank_mean': np.mean(ranks),
-                'rank_std': np.std(ranks),
-                'min_rank': np.min(ranks),
-                'max_rank': np.max(ranks)
-            })
+            stability.append(
+                {
+                    "feature": feature,
+                    "mean_importance": np.mean(imp),
+                    "std_importance": np.std(imp),
+                    "cv": np.std(imp) / np.mean(imp) if np.mean(imp) > 0 else np.nan,
+                    "rank_mean": np.mean(ranks),
+                    "rank_std": np.std(ranks),
+                    "min_rank": np.min(ranks),
+                    "max_rank": np.max(ranks),
+                }
+            )
 
         df = pd.DataFrame(stability)
-        df = df.sort_values('mean_importance', ascending=False)
+        df = df.sort_values("mean_importance", ascending=False)
 
         return df
 
@@ -277,17 +271,19 @@ class SHAPAnalyzer:
             return pd.DataFrame()
 
         # Average importance across windows
-        all_importance = np.array([r['mean_abs_shap'] for r in self.window_results])
+        all_importance = np.array([r["mean_abs_shap"] for r in self.window_results])
         mean_importance = np.mean(all_importance, axis=0)
 
-        df = pd.DataFrame({
-            'feature': self.feature_names,
-            'mean_shap_importance': mean_importance,
-            'windows_analyzed': len(self.window_results)
-        })
+        df = pd.DataFrame(
+            {
+                "feature": self.feature_names,
+                "mean_shap_importance": mean_importance,
+                "windows_analyzed": len(self.window_results),
+            }
+        )
 
-        df = df.sort_values('mean_shap_importance', ascending=False)
-        df['rank'] = range(1, len(df) + 1)
+        df = df.sort_values("mean_shap_importance", ascending=False)
+        df["rank"] = range(1, len(df) + 1)
 
         return df
 
@@ -295,11 +291,7 @@ class SHAPAnalyzer:
         """Check if SHAP should be calculated for this window."""
         return window_id % self.window_interval == 0
 
-    def _get_top_features(
-        self,
-        importance: np.ndarray,
-        n: int = 5
-    ) -> List[Tuple[str, float]]:
+    def _get_top_features(self, importance: np.ndarray, n: int = 5) -> List[Tuple[str, float]]:
         """Get top N features by importance."""
         indices = np.argsort(importance)[::-1][:n]
         return [(self.feature_names[i], importance[i]) for i in indices]
@@ -327,37 +319,38 @@ class SHAPAnalyzer:
 
         if timestamp is None:
             from datetime import datetime
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Save aggregated importance
         agg_df = self.get_aggregated_importance()
         if len(agg_df) > 0:
-            agg_path = os.path.join(output_dir, f'shap_importance_{timestamp}.csv')
+            agg_path = os.path.join(output_dir, f"shap_importance_{timestamp}.csv")
             agg_df.to_csv(agg_path, index=False)
             print(f"  Saved: {agg_path}")
 
         # Save temporal stability
         stability_df = self.calculate_temporal_stability()
         if len(stability_df) > 0:
-            stab_path = os.path.join(output_dir, f'shap_temporal_stability_{timestamp}.csv')
+            stab_path = os.path.join(output_dir, f"shap_temporal_stability_{timestamp}.csv")
             stability_df.to_csv(stab_path, index=False)
             print(f"  Saved: {stab_path}")
 
         # Save regional results as JSON
         if self.regional_results:
-            regional_path = os.path.join(output_dir, f'shap_regional_{timestamp}.json')
+            regional_path = os.path.join(output_dir, f"shap_regional_{timestamp}.json")
             # Convert numpy arrays to lists for JSON serialization
             regional_json = {}
             for window_id, result in self.regional_results.items():
                 regional_json[str(window_id)] = {
-                    'districts': {
+                    "districts": {
                         district: {
-                            'n_samples': data['n_samples'],
-                            'top_features': data['top_features']
+                            "n_samples": data["n_samples"],
+                            "top_features": data["top_features"],
                         }
-                        for district, data in result['districts'].items()
+                        for district, data in result["districts"].items()
                     }
                 }
-            with open(regional_path, 'w', encoding='utf-8') as f:
+            with open(regional_path, "w", encoding="utf-8") as f:
                 json.dump(regional_json, f, indent=2, ensure_ascii=False)
             print(f"  Saved: {regional_path}")

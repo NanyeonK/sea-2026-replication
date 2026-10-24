@@ -42,7 +42,7 @@ python run_all.py              # generate exhibits from prepared inputs
 python run_all.py --with-build # rebuild intermediate inputs and generate exhibits
 ```
 
-The build steps require merged transactions and fitted models. Figure 2 requires district boundaries or separately supplied map images. Outputs are written to `output/tables/` and `output/figures/manuscript/`; execution logs are written to `output/logs/`.
+The build steps require merged transactions and fitted models. They generate both SHAP category decompositions, including the version that separates district identifiers and their interactions from the location category for Figures 6B and 7. Figure 2 requires district boundaries or separately supplied map images. Outputs are written to `output/tables/` and `output/figures/manuscript/`; execution logs are written to `output/logs/`.
 
 | Component | Location |
 |---|---|

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Format Appendix A SHAP summaries for each XGBoost refit and their mean."""
+
 from __future__ import annotations
 import sys
 from pathlib import Path
@@ -28,8 +29,11 @@ def main() -> int:
     for label, col in DISPLAY_COLUMNS.items():
         out[label] = s[col].round(4)
     out["Time share, mean %"] = s["district_time_pct_mean"].round(1)
-    out["Time share, range %"] = (s["district_time_pct_min"].round(1).astype(str)
-                                  + "-" + s["district_time_pct_max"].round(1).astype(str))
+    out["Time share, range %"] = (
+        s["district_time_pct_min"].round(1).astype(str)
+        + "-"
+        + s["district_time_pct_max"].round(1).astype(str)
+    )
     out.to_csv(TABLES_DIR / "TableA_window_sensitivity.csv", index=False)
 
     refits = s[s["refit"] != "mean"]
@@ -50,6 +54,7 @@ def main() -> int:
     print(out.to_string(index=False))
     print("\nOVERALL:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

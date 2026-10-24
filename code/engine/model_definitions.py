@@ -10,6 +10,7 @@ import warnings
 # Try to import optional dependencies
 try:
     import statsmodels.api as sm
+
     STATSMODELS_AVAILABLE = True
 except ImportError:
     STATSMODELS_AVAILABLE = False
@@ -17,6 +18,7 @@ except ImportError:
 
 try:
     import xgboost as xgb
+
     XGB_AVAILABLE = True
 except ImportError:
     XGB_AVAILABLE = False
@@ -27,129 +29,125 @@ except ImportError:
 # ============================================================================
 
 HEDONIC_VARIABLE_SETS = {
-    'H1': {
-        'name': 'Basic Hedonic Model',
-        'description': 'Core structural + district fixed effects (no temporal)',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': [],  # NO temporal for H1
-        'dummies': {
-            'district': True,   # 24 dummies (ref: 중구)
-            'month': False,     # NO month FE for H1
+    "H1": {
+        "name": "Basic Hedonic Model",
+        "description": "Core structural + district fixed effects (no temporal)",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": [],  # NO temporal for H1
+        "dummies": {
+            "district": True,  # 24 dummies (ref: 중구)
+            "month": False,  # NO month FE for H1
         },
-        'binary': [],
-        'count': [],
-        'expected_coefficients': 28,  # 3 + 24 + intercept
+        "binary": [],
+        "count": [],
+        "expected_coefficients": 28,  # 3 + 24 + intercept
     },
-
-    'H2': {
-        'name': 'Temporal Hedonic Model',
-        'description': 'H1 + time_trend + month fixed effects',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': ['time_trend'],  # Linear time trend only
-        'dummies': {
-            'district': True,   # 24 dummies
-            'month': True,      # 11 month dummies (ref: January)
+    "H2": {
+        "name": "Temporal Hedonic Model",
+        "description": "H1 + time_trend + month fixed effects",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": ["time_trend"],  # Linear time trend only
+        "dummies": {
+            "district": True,  # 24 dummies
+            "month": True,  # 11 month dummies (ref: January)
         },
-        'binary': [],
-        'count': [],
-        'expected_coefficients': 40,  # 3 + 1 + 11 + 24 + intercept
+        "binary": [],
+        "count": [],
+        "expected_coefficients": 40,  # 3 + 1 + 11 + 24 + intercept
     },
-
-    'H3': {
-        'name': 'Extended Hedonic Model',
-        'description': 'H2 + amenity variables',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': ['time_trend'],  # Linear time trend
-        'dummies': {
-            'district': True,   # 24 dummies
-            'month': True,      # 11 month dummies
+    "H3": {
+        "name": "Extended Hedonic Model",
+        "description": "H2 + amenity variables",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": ["time_trend"],  # Linear time trend
+        "dummies": {
+            "district": True,  # 24 dummies
+            "month": True,  # 11 month dummies
         },
-        'binary': ['has_parking', 'has_elevator', 'has_subway'],
-        'count': ['total_parking', 'elevator_count', 'cctv_count', 'edu_count'],
-        'expected_coefficients': 47,  # 3 + 1 + 11 + 24 + 3 + 4 + intercept
+        "binary": ["has_parking", "has_elevator", "has_subway"],
+        "count": ["total_parking", "elevator_count", "cctv_count", "edu_count"],
+        "expected_coefficients": 47,  # 3 + 1 + 11 + 24 + 3 + 4 + intercept
     },
-
-    'H3g': {
-        'name': 'Gu FE Hedonic Model',
-        'description': 'H3 with explicit gu (district) fixed effects -- subsample label',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': ['time_trend'],
-        'dummies': {
-            'district': True,
-            'month': True,
+    "H3g": {
+        "name": "District Fixed Effects Hedonic Model",
+        "description": "H3 district fixed effects specification, labelled H3g in exhibits",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": ["time_trend"],
+        "dummies": {
+            "district": True,
+            "month": True,
         },
-        'binary': ['has_parking', 'has_elevator', 'has_subway'],
-        'count': ['total_parking', 'elevator_count', 'cctv_count', 'edu_count'],
-        'expected_coefficients': 47,
+        "binary": ["has_parking", "has_elevator", "has_subway"],
+        "count": ["total_parking", "elevator_count", "cctv_count", "edu_count"],
+        "expected_coefficients": 47,
     },
-
-    'H3c': {
-        'name': 'Apt Complex FE Hedonic Model',
-        'description': 'H3 with apt complex FE instead of district',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': ['time_trend'],
-        'dummies': {
-            'district': False,
-            'apt_complex': True,
-            'month': True,
+    "H3c": {
+        "name": "Apartment Complex Fixed Effects Hedonic Model",
+        "description": "H3 with apartment complex fixed effects replacing district effects",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": ["time_trend"],
+        "dummies": {
+            "district": False,
+            "apt_complex": True,
+            "month": True,
         },
-        'binary': ['has_parking', 'has_elevator', 'has_subway'],
-        'count': ['total_parking', 'elevator_count', 'cctv_count', 'edu_count'],
-        'expected_coefficients': -1,
+        "binary": ["has_parking", "has_elevator", "has_subway"],
+        "count": ["total_parking", "elevator_count", "cctv_count", "edu_count"],
+        "expected_coefficients": -1,
     },
-
-    'H4': {
-        'name': 'District-Specific Models',
-        'description': 'H3 estimated separately for each district (no district FE)',
-        'continuous': ['area_numeric', 'floor', 'building_age'],
-        'temporal': ['time_trend'],  # Linear time trend
-        'dummies': {
-            'district': False,  # NOT included (separate models by district)
-            'month': True,      # 11 month dummies
+    "H4": {
+        "name": "District-Specific Models",
+        "description": "H3 estimated separately for each district (no district FE)",
+        "continuous": ["area_numeric", "floor", "building_age"],
+        "temporal": ["time_trend"],  # Linear time trend
+        "dummies": {
+            "district": False,  # NOT included (separate models by district)
+            "month": True,  # 11 month dummies
         },
-        'binary': ['has_parking', 'has_elevator', 'has_subway'],
-        'count': ['total_parking', 'elevator_count', 'cctv_count', 'edu_count'],
-        'n_models': 25,
-        'expected_coefficients_per_model': 23,  # 3 + 1 + 11 + 3 + 4 + intercept
+        "binary": ["has_parking", "has_elevator", "has_subway"],
+        "count": ["total_parking", "elevator_count", "cctv_count", "edu_count"],
+        "n_models": 25,
+        "expected_coefficients_per_model": 23,  # 3 + 1 + 11 + 3 + 4 + intercept
     },
-
-    'H5': {
-        'name': 'Flexible Hedonic Model',
-        'description': 'H3 + interactions + squared terms + log(area)',
-        'continuous': [
+    "H5": {
+        "name": "Flexible Hedonic Model",
+        "description": "H3 + interactions + squared terms + log(area)",
+        "continuous": [
             # Base structural
-            'area_numeric', 'floor', 'building_age',
+            "area_numeric",
+            "floor",
+            "building_age",
             # Non-linear transformations
-            'log_area', 'area_sq', 'building_age_sq',
+            "log_area",
+            "area_sq",
+            "building_age_sq",
             # Simple interaction
-            'area_x_floor'
+            "area_x_floor",
         ],
-        'temporal': ['time_trend'],  # Linear time trend
-        'dummies': {
-            'district': True,   # 24 district dummies
-            'month': True,      # 11 month dummies
+        "temporal": ["time_trend"],  # Linear time trend
+        "dummies": {
+            "district": True,  # 24 district dummies
+            "month": True,  # 11 month dummies
         },
-        'binary': ['has_parking', 'has_elevator', 'has_subway'],
-        'count': ['total_parking', 'elevator_count', 'cctv_count', 'edu_count'],
+        "binary": ["has_parking", "has_elevator", "has_subway"],
+        "count": ["total_parking", "elevator_count", "cctv_count", "edu_count"],
         # Note: area × district interactions created separately (24, reference 중구 excluded)
         # Total: 3 base + 3 nonlinear + 1 interaction + 1 trend + 11 month + 24 district + 3 binary + 4 count + 24 area×district + intercept
-        'expected_coefficients': 75,  # Approximate (3+3+1+1+11+24+3+4+24+1)
-        'interactions': True,  # Flag to create area × district interactions
-    }
+        "expected_coefficients": 75,  # Approximate (3+3+1+1+11+24+3+4+24+1)
+        "interactions": True,  # Flag to create area × district interactions
+    },
 }
 
 # ============================================================================
 # Model Factory
 # ============================================================================
 
+
 class ModelFactory:
     """Create and fit hedonic OLS, Ridge and XGBoost models."""
 
     def __init__(
-        self,
-        gpu_available: bool = False,
-        gpu_device: str = 'cpu',
-        quick_tune: bool = False
+        self, gpu_available: bool = False, gpu_device: str = "cpu", quick_tune: bool = False
     ):
         self.gpu_available = gpu_available
         self.gpu_device = gpu_device
@@ -160,13 +158,10 @@ class ModelFactory:
     # -------------------------------------------------------------------------
 
     def create_hedonic_model(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        specification: str = 'H1'
+        self, X: pd.DataFrame, y: pd.Series, specification: str = "H1"
     ) -> Optional[Any]:
         """
-        Create and fit Hedonic OLS model for H1/H2/H3.
+        Fit an OLS model for a hedonic feature matrix.
 
         Parameters
         ----------
@@ -175,7 +170,7 @@ class ModelFactory:
         y : pd.Series
             Target variable
         specification : str
-            'H1', 'H2', or 'H3'
+            Hedonic specification label
 
         Returns
         -------
@@ -187,7 +182,7 @@ class ModelFactory:
             return None
 
         # Add constant for intercept
-        X_const = sm.add_constant(X, has_constant='add')
+        X_const = sm.add_constant(X, has_constant="add")
 
         # Fit OLS
         try:
@@ -202,8 +197,8 @@ class ModelFactory:
         df: pd.DataFrame,
         X: pd.DataFrame,
         y: pd.Series,
-        district_col: str = 'district',
-        min_observations: int = 100
+        district_col: str = "district",
+        min_observations: int = 100,
     ) -> Dict[str, Any]:
         """
         Create H4 specification: separate OLS models for each district.
@@ -248,19 +243,19 @@ class ModelFactory:
                 continue
 
             # Add constant
-            X_const = sm.add_constant(X_district, has_constant='add')
+            X_const = sm.add_constant(X_district, has_constant="add")
 
             # Fit OLS
             try:
                 model = sm.OLS(y_district, X_const).fit()
                 results[district] = {
-                    'model': model,
-                    'n_obs': n_obs,
-                    'r2': model.rsquared,
-                    'adj_r2': model.rsquared_adj,
-                    'coefficients': model.params,
-                    'std_errors': model.bse,
-                    'pvalues': model.pvalues
+                    "model": model,
+                    "n_obs": n_obs,
+                    "r2": model.rsquared,
+                    "adj_r2": model.rsquared_adj,
+                    "coefficients": model.params,
+                    "std_errors": model.bse,
+                    "pvalues": model.pvalues,
                 }
             except Exception as e:
                 print(f"    H4 model failed for {district}: {e}")
@@ -272,11 +267,7 @@ class ModelFactory:
     # -------------------------------------------------------------------------
 
     def create_ridge_model(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        alpha: float = None,
-        tune: bool = True
+        self, X: pd.DataFrame, y: pd.Series, alpha: float = None, tune: bool = True
     ) -> Tuple[Ridge, float]:
         """
         Create and fit Ridge regression model.
@@ -304,6 +295,7 @@ class ModelFactory:
 
             # Cross-validation to find best alpha
             from sklearn.linear_model import RidgeCV
+
             ridge_cv = RidgeCV(alphas=alpha_range, cv=3)
             ridge_cv.fit(X, y)
             best_alpha = ridge_cv.alpha_
@@ -326,28 +318,24 @@ class ModelFactory:
         """Get hyperparameter grid for XGBoost (efficient)."""
         if self.quick_tune:
             return {
-                'n_estimators': [100, 200],
-                'max_depth': [8, 10],
-                'learning_rate': [0.1, 0.15],
-                'subsample': [0.8, 1.0]
+                "n_estimators": [100, 200],
+                "max_depth": [8, 10],
+                "learning_rate": [0.1, 0.15],
+                "subsample": [0.8, 1.0],
             }
         else:
             # Efficient grid: reduced combos, early stopping handles n_estimators
             return {
-                'n_estimators': [300, 500],
-                'max_depth': [6, 8, 10],
-                'learning_rate': [0.05, 0.1],
-                'subsample': [0.8, 0.9],
-                'colsample_bytree': [0.8, 0.9],
-                'gamma': [0, 0.1]
+                "n_estimators": [300, 500],
+                "max_depth": [6, 8, 10],
+                "learning_rate": [0.05, 0.1],
+                "subsample": [0.8, 0.9],
+                "colsample_bytree": [0.8, 0.9],
+                "gamma": [0, 0.1],
             }
 
     def create_xgboost_model(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        tune: bool = True,
-        n_iter: int = 20
+        self, X: pd.DataFrame, y: pd.Series, tune: bool = True, n_iter: int = 20
     ) -> Tuple[Any, Dict]:
         """
         Create and fit XGBoost model with optional GPU acceleration.
@@ -373,22 +361,18 @@ class ModelFactory:
             return None, {}
 
         # Base parameters
-        base_params = {
-            'random_state': 42,
-            'tree_method': 'hist',
-            'n_jobs': -1
-        }
+        base_params = {"random_state": 42, "tree_method": "hist", "n_jobs": -1}
 
         # Add GPU settings if available
-        if self.gpu_available and self.gpu_device == 'cuda':
-            base_params['device'] = 'cuda'
+        if self.gpu_available and self.gpu_device == "cuda":
+            base_params["device"] = "cuda"
 
         if tune:
             # RandomizedSearchCV with early stopping via callbacks
             param_grid = self.get_xgboost_param_grid()
             # Early stopping: use high n_estimators, let early_stopping_rounds trim
-            base_params['early_stopping_rounds'] = 30
-            base_params['n_estimators'] = 500  # max, early stopping will cut
+            base_params["early_stopping_rounds"] = 30
+            base_params["n_estimators"] = 500  # max, early stopping will cut
             xgb_model = xgb.XGBRegressor(**base_params)
 
             effective_n_iter = min(n_iter, 8) if not self.quick_tune else min(n_iter, 5)
@@ -397,40 +381,44 @@ class ModelFactory:
                 param_grid,
                 n_iter=effective_n_iter,
                 cv=2,
-                scoring='neg_mean_squared_error',
+                scoring="neg_mean_squared_error",
                 random_state=42,
-                n_jobs=1  # XGBoost handles parallelism internally
+                n_jobs=1,  # XGBoost handles parallelism internally
             )
             # Use eval_set for early stopping within CV
             from sklearn.model_selection import train_test_split
+
             X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.15, random_state=42)
             search.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
 
             best_model = search.best_estimator_
             best_params = search.best_params_
-            best_params['effective_n_iter'] = effective_n_iter
-            best_params['cv_folds'] = 2
-            best_params['early_stopping_rounds'] = 30
-            best_params['actual_best_iteration'] = getattr(best_model, 'best_iteration', None)
+            best_params["effective_n_iter"] = effective_n_iter
+            best_params["cv_folds"] = 2
+            best_params["early_stopping_rounds"] = 30
+            best_params["actual_best_iteration"] = getattr(best_model, "best_iteration", None)
             return best_model, best_params
         else:
             # Default parameters with early stopping
             default_params = {
-                'n_estimators': 300,
-                'max_depth': 8,
-                'learning_rate': 0.1,
-                'subsample': 0.8,
-                'early_stopping_rounds': 30
+                "n_estimators": 300,
+                "max_depth": 8,
+                "learning_rate": 0.1,
+                "subsample": 0.8,
+                "early_stopping_rounds": 30,
             }
             model = xgb.XGBRegressor(**base_params, **default_params)
             from sklearn.model_selection import train_test_split
+
             X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.15, random_state=42)
             model.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
             return model, default_params
 
+
 # ============================================================================
 # Hedonic Model Builder
 # ============================================================================
+
 
 class HedonicModelBuilder:
     """Build hedonic feature matrices using dummy encoding."""
@@ -438,13 +426,12 @@ class HedonicModelBuilder:
     def __init__(self, dummy_pipeline=None):
         if dummy_pipeline is None:
             from data_preprocessor import DummyEncodingPipeline
+
             dummy_pipeline = DummyEncodingPipeline()
         self.dummy_pipeline = dummy_pipeline
 
     def build_feature_matrix(
-        self,
-        df: pd.DataFrame,
-        specification: str = 'H1'
+        self, df: pd.DataFrame, specification: str = "H1"
     ) -> Tuple[pd.DataFrame, List[str]]:
         """
         Build feature matrix for specified Hedonic model.
@@ -465,47 +452,47 @@ class HedonicModelBuilder:
         features = []
 
         # 1. Continuous (structural) variables
-        continuous_cols = [c for c in spec['continuous'] if c in df.columns]
+        continuous_cols = [c for c in spec["continuous"] if c in df.columns]
         continuous_df = df[continuous_cols].copy()
         features.extend(continuous_cols)
 
         # 2. Temporal variables (time_trend for H2+)
-        if spec.get('temporal'):
-            temporal_cols = [c for c in spec['temporal'] if c in df.columns]
+        if spec.get("temporal"):
+            temporal_cols = [c for c in spec["temporal"] if c in df.columns]
             temporal_df = df[temporal_cols].copy()
             features.extend(temporal_cols)
         else:
             temporal_df = pd.DataFrame(index=df.index)
 
         # 3. Dummy variables (district and/or month)
-        dummy_config = spec['dummies']
+        dummy_config = spec["dummies"]
         dummy_df = self.dummy_pipeline.transform(
             df,
-            include_district=dummy_config.get('district', False),
+            include_district=dummy_config.get("district", False),
             include_year=False,  # No year FE (using time_trend instead)
-            include_month=dummy_config.get('month', False),  # Month FE for H2+
-            include_apt_complex=dummy_config.get('apt_complex', False)
+            include_month=dummy_config.get("month", False),  # Month FE for H2+
+            include_apt_complex=dummy_config.get("apt_complex", False),
         )
         features.extend(dummy_df.columns.tolist())
 
         # 4. Binary variables
-        if spec.get('binary'):
-            binary_cols = [c for c in spec['binary'] if c in df.columns]
+        if spec.get("binary"):
+            binary_cols = [c for c in spec["binary"] if c in df.columns]
             binary_df = df[binary_cols].astype(float)
             features.extend(binary_cols)
         else:
             binary_df = pd.DataFrame(index=df.index)
 
         # 5. Count variables
-        if spec.get('count'):
-            count_cols = [c for c in spec['count'] if c in df.columns]
+        if spec.get("count"):
+            count_cols = [c for c in spec["count"] if c in df.columns]
             count_df = df[count_cols].copy()
             features.extend(count_cols)
         else:
             count_df = pd.DataFrame(index=df.index)
 
         # 6. Interaction features (H5 only)
-        if spec.get('interactions'):
+        if spec.get("interactions"):
             # Import SEOUL_DISTRICTS from data_preprocessor
             from data_preprocessor import SEOUL_DISTRICTS
 
@@ -516,9 +503,12 @@ class HedonicModelBuilder:
             # category the district dummies use (중구) restores full rank. This is a
             # reparameterisation: the column space, and therefore every fitted value, is
             # unchanged. See DummyEncodingPipeline(reference_district='중구').
-            REFERENCE_DISTRICT = '중구'
-            interaction_cols = [f'area_x_district_{district}' for district in SEOUL_DISTRICTS
-                                if district != REFERENCE_DISTRICT]
+            REFERENCE_DISTRICT = "중구"
+            interaction_cols = [
+                f"area_x_district_{district}"
+                for district in SEOUL_DISTRICTS
+                if district != REFERENCE_DISTRICT
+            ]
             available_interactions = [c for c in interaction_cols if c in df.columns]
 
             if available_interactions:
@@ -530,12 +520,14 @@ class HedonicModelBuilder:
             interaction_df = pd.DataFrame(index=df.index)
 
         # Combine all features
-        X = pd.concat([continuous_df, temporal_df, dummy_df, binary_df, count_df, interaction_df], axis=1)
+        X = pd.concat(
+            [continuous_df, temporal_df, dummy_df, binary_df, count_df, interaction_df], axis=1
+        )
 
         # Ensure all columns are numeric (convert object dtypes)
         for col in X.columns:
-            if X[col].dtype == 'object':
-                X[col] = pd.to_numeric(X[col], errors='coerce')
+            if X[col].dtype == "object":
+                X[col] = pd.to_numeric(X[col], errors="coerce")
 
         # Fill missing values with column median
         X = X.fillna(X.median())
@@ -548,13 +540,15 @@ class HedonicModelBuilder:
     def get_expected_coefficient_count(self, specification: str) -> int:
         """Get expected number of coefficients for a specification."""
         spec = HEDONIC_VARIABLE_SETS[specification]
-        if 'expected_coefficients' in spec:
-            return spec['expected_coefficients']
-        return spec.get('expected_coefficients_per_model', 0)
+        if "expected_coefficients" in spec:
+            return spec["expected_coefficients"]
+        return spec.get("expected_coefficients_per_model", 0)
+
 
 # ============================================================================
 # Model Wrapper for Predictions
 # ============================================================================
+
 
 class ModelWrapper:
     """
@@ -575,21 +569,12 @@ class ModelWrapper:
         For H4, dictionary of district-specific models
     """
 
-    def __init__(
-        self,
-        model: Any,
-        model_type: str,
-        h4_models: Dict = None
-    ):
+    def __init__(self, model: Any, model_type: str, h4_models: Dict = None):
         self.model = model
         self.model_type = model_type
         self.h4_models = h4_models
 
-    def predict(
-        self,
-        X: pd.DataFrame,
-        df: pd.DataFrame = None
-    ) -> np.ndarray:
+    def predict(self, X: pd.DataFrame, df: pd.DataFrame = None) -> np.ndarray:
         """
         Make predictions using the wrapped model.
 
@@ -605,12 +590,12 @@ class ModelWrapper:
         np.ndarray
             Predictions
         """
-        if self.model_type == 'hedonic':
+        if self.model_type == "hedonic":
             # Add constant for statsmodels
-            X_const = sm.add_constant(X, has_constant='add')
+            X_const = sm.add_constant(X, has_constant="add")
             return self.model.predict(X_const)
 
-        elif self.model_type == 'h4':
+        elif self.model_type == "h4":
             # District-specific predictions
             if df is None:
                 raise ValueError("df required for H4 predictions")
@@ -618,18 +603,18 @@ class ModelWrapper:
             predictions = np.full(len(X), np.nan)
 
             for district, model_info in self.h4_models.items():
-                mask = df['district'] == district
+                mask = df["district"] == district
                 if mask.sum() > 0:
                     X_district = X[mask]
-                    X_const = sm.add_constant(X_district, has_constant='add')
+                    X_const = sm.add_constant(X_district, has_constant="add")
                     try:
-                        predictions[mask] = model_info['model'].predict(X_const)
+                        predictions[mask] = model_info["model"].predict(X_const)
                     except Exception:
                         pass
 
             return predictions
 
-        elif self.model_type in ['ridge', 'xgboost']:
+        elif self.model_type in ["ridge", "xgboost"]:
             return self.model.predict(X)
 
         else:
@@ -638,6 +623,6 @@ class ModelWrapper:
     @property
     def r2(self) -> Optional[float]:
         """Get R² if available."""
-        if self.model_type == 'hedonic' and hasattr(self.model, 'rsquared'):
+        if self.model_type == "hedonic" and hasattr(self.model, "rsquared"):
             return self.model.rsquared
         return None

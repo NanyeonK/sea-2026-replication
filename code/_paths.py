@@ -2,6 +2,7 @@
 
 Required inputs and their locations are listed in data/README.md.
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,13 +18,11 @@ MODEL_DIR = DATA_DIR / "model"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 TABLES_DIR = OUTPUT_DIR / "tables"
 FIGURES_DIR = OUTPUT_DIR / "figures"
-DOCS_DIR = PROJECT_ROOT / "docs"
 
-RAW_TRANSACTIONS = RAW_DATA_DIR / "seoul_apartment_transactions_with_building_info.csv"
-RAW_GEOJSON = DATA_DIR / "geo" / "seoul_districts_2017.geojson"
-FROZEN_MODEL = MODEL_DIR / "xgb_window_72.pkl"
+TRANSACTIONS_FILE = RAW_DATA_DIR / "seoul_apartment_transactions_with_building_info.csv"
+DISTRICT_BOUNDARIES_FILE = DATA_DIR / "geo" / "seoul_districts_2017.geojson"
 
-for _d in (TABLES_DIR, FIGURES_DIR, DERIVED_DATA_DIR, DOCS_DIR):
+for _d in (TABLES_DIR, FIGURES_DIR, DERIVED_DATA_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 
@@ -31,6 +30,7 @@ def require(*paths: Path) -> None:
     """Register input paths in the run log and exit if any required file is missing."""
     try:
         from _runlog import register_input
+
         for p in paths:
             register_input(p)
     except ImportError:

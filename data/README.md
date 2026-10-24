@@ -42,8 +42,6 @@ The exhibit scripts require the prepared inputs below. These files are supplied 
 
 ```text
 data/derived/
-  full_table2_multi_horizon.csv
-  subsample_table2_multi_horizon.csv
   full_window_level_results.csv
   subsample_window_level_results.csv
   dm_tests_hac.csv
@@ -72,4 +70,4 @@ data/geo/
 
 SHAP rebuilding requires the fitted models. Each pickle contains the model and feature metadata expected by the build scripts. Figure 2 uses the separately supplied GeoJSON. The exact boundary edition and prepared input files can be requested from the corresponding author.
 
-The default exhibit run derives `subsample_district_r2_all_horizons.csv` from the prediction file. The build option regenerates Table 1, the main SHAP summaries, draw sensitivity and Appendix C inputs. It still needs the other prepared inputs above. The existing numerical assertions compare selected outputs with the study's reference values and may fail on a different data vintage.
+The default exhibit run derives `subsample_district_r2_all_horizons.csv` from the prediction file. The build option regenerates Table 1, both SHAP category decompositions, draw sensitivity and Appendix C inputs. It still needs the other prepared inputs above. The existing numerical assertions compare selected outputs with the study's reference values and may fail on a different data vintage.

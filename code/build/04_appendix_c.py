@@ -4,6 +4,7 @@
 H6 replaces district effects with dong effects and adds amenity and accessibility
 variables. H4 and H5 are also estimated for comparison with the reference results.
 """
+
 from __future__ import annotations
 
 import sys
@@ -16,7 +17,7 @@ import statsmodels.api as sm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import _runlog  # noqa: F401
-from _paths import DERIVED_DATA_DIR, RAW_TRANSACTIONS, engine_path, require  # noqa: E402
+from _paths import DERIVED_DATA_DIR, TRANSACTIONS_FILE, engine_path, require  # noqa: E402
 
 sys.path.insert(0, str(engine_path()))
 from data_preprocessor import DualEncodingProcessor  # noqa: E402
@@ -28,11 +29,17 @@ warnings.filterwarnings("ignore")
 APPENDIX_RESULTS_FILE = DERIVED_DATA_DIR / "appendix_c_window_level.csv"
 HORIZONS = [1, 3, 6, 12]
 
-PUBLISHED = {
-    ("H4", 1): 0.667153, ("H4", 3): 0.617393, ("H4", 6): 0.540189, ("H4", 12): 0.370290,
-    ("H5", 1): 0.634923, ("H5", 3): 0.591332, ("H5", 6): 0.525379, ("H5", 12): 0.377766,
+REFERENCE_R2 = {
+    ("H4", 1): 0.667153,
+    ("H4", 3): 0.617393,
+    ("H4", 6): 0.540189,
+    ("H4", 12): 0.370290,
+    ("H5", 1): 0.634923,
+    ("H5", 3): 0.591332,
+    ("H5", 6): 0.525379,
+    ("H5", 12): 0.377766,
 }
-TOL = 5e-4
+REFERENCE_TOLERANCE = 5e-4
 
 DONG_COL = "시군구"
 EXTRA_CATEGORICAL = ["kaptd_wtimesub", "subway_line"]
@@ -59,12 +66,14 @@ def level_maps(df: pd.DataFrame) -> dict[str, list[str]]:
 
 def dummies(s: pd.Series, levels: list[str], prefix: str) -> pd.DataFrame:
     v = s.fillna("__MISSING__").astype(str)
-    return pd.DataFrame({f"{prefix}_{lv}": (v == lv).astype(float).to_numpy() for lv in levels},
-                        index=s.index)
+    return pd.DataFrame(
+        {f"{prefix}_{lv}": (v == lv).astype(float).to_numpy() for lv in levels}, index=s.index
+    )
 
 
-def build_h6(df: pd.DataFrame, builder: HedonicModelBuilder,
-             maps: dict[str, list[str]]) -> pd.DataFrame:
+def build_h6(
+    df: pd.DataFrame, builder: HedonicModelBuilder, maps: dict[str, list[str]]
+) -> pd.DataFrame:
     X, _ = builder.build_feature_matrix(df, "H5")
     X = X.drop(columns=[c for c in X.columns if c.startswith("district_")])
     blocks = [X, dummies(df[DONG_COL], maps[DONG_COL], "dong")]
@@ -82,20 +91,24 @@ def fit_predict(X_tr: pd.DataFrame, y_tr: pd.Series, X_te: pd.DataFrame) -> np.n
 
 
 def main() -> int:
-    require(RAW_TRANSACTIONS)
-    df = DualEncodingProcessor().load_and_prepare_data(str(RAW_TRANSACTIONS))
+    require(TRANSACTIONS_FILE)
+    df = DualEncodingProcessor().load_and_prepare_data(str(TRANSACTIONS_FILE))
 
     mask = df["total_parking"].notna() & df["elevator_count"].notna()
     df = df[mask].copy().reset_index(drop=True)
-    print(f"[appendix-c] amenity subsample {len(df):,} rows, "
-          f"{df['district'].nunique()} districts, {df[DONG_COL].nunique()} dong")
+    print(
+        f"[appendix-c] amenity subsample {len(df):,} rows, "
+        f"{df['district'].nunique()} districts, {df[DONG_COL].nunique()} dong"
+    )
 
     y = df["log_price_per_sqm"]
     months = df["date"].dt.to_period("M")
     builder, factory = HedonicModelBuilder(), ModelFactory()
     maps = level_maps(df)
-    print(f"[appendix-c] H6 adds {len(maps[DONG_COL])} dong, {len(maps['subway_line'])} subway "
-          f"line and {len(maps['kaptd_wtimesub'])} walking-band dummies")
+    print(
+        f"[appendix-c] H6 adds {len(maps[DONG_COL])} dong, {len(maps['subway_line'])} subway "
+        f"line and {len(maps['kaptd_wtimesub'])} walking-band dummies"
+    )
 
     windows = RollingWindowEngine(prediction_horizons=HORIZONS).create_rolling_windows(df["date"])
 
@@ -128,16 +141,24 @@ def main() -> int:
                 m = (test_df["district"] == d).to_numpy()
                 if m.sum():
                     p4[m] = res["model"].predict(
-                        sm.add_constant(X4_te[m].reindex(columns=X4.columns, fill_value=0.0),
-                                        has_constant="add"))
+                        sm.add_constant(
+                            X4_te[m].reindex(columns=X4.columns, fill_value=0.0), has_constant="add"
+                        )
+                    )
             preds["H4"] = p4
 
             for name, p in preds.items():
                 ok = ~np.isnan(p)
                 if ok.sum():
-                    rows.append({"window_id": w["window_id"], "horizon": h, "model": name,
-                                 "n_test": int(ok.sum()),
-                                 "oos_r2": oos_r2(y_te.to_numpy()[ok], p[ok])})
+                    rows.append(
+                        {
+                            "window_id": w["window_id"],
+                            "horizon": h,
+                            "model": name,
+                            "n_test": int(ok.sum()),
+                            "oos_r2": oos_r2(y_te.to_numpy()[ok], p[ok]),
+                        }
+                    )
         if w["window_id"] % 12 == 0:
             print(f"[appendix-c]   window {w['window_id']:>3} (train n={len(train_df):,})")
 
@@ -145,22 +166,23 @@ def main() -> int:
     agg = res.groupby(["model", "horizon"])["oos_r2"].mean()
 
     bad = []
-    for (m, h), want in sorted(PUBLISHED.items()):
+    for (m, h), want in sorted(REFERENCE_R2.items()):
         got = float(agg.loc[(m, h)])
-        flag = "OK" if abs(got - want) <= TOL else "MISMATCH"
+        flag = "OK" if abs(got - want) <= REFERENCE_TOLERANCE else "MISMATCH"
         print(f"[appendix-c] {m} h={h:>2} published={want:.6f} re-estimated={got:.6f} {flag}")
         if flag == "MISMATCH":
             bad.append((m, h))
     if bad:
-        print(f"[appendix-c] FAIL: {len(bad)} mismatches against Table 2. Not writing output, "
-              f"because a harness that cannot reproduce the published specifications cannot be "
-              f"used to interpret a new one.")
+        print(f"[appendix-c] {len(bad)} reference values differ from Table 2; no output written.")
         return 4
 
     res.to_csv(APPENDIX_RESULTS_FILE, index=False)
-    print(f"[appendix-c] wrote {APPENDIX_RESULTS_FILE.name} ({len(res)} rows, "
-          f"H6 mean R2 {agg.loc[('H6', 1)]:.4f} at h=1)")
+    print(
+        f"[appendix-c] wrote {APPENDIX_RESULTS_FILE.name} ({len(res)} rows, "
+        f"H6 mean R2 {agg.loc[('H6', 1)]:.4f} at h=1)"
+    )
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

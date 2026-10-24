@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy generated PNGs to manuscript figure filenames and write a figure index."""
+
 from __future__ import annotations
 
 import shutil
@@ -14,27 +15,66 @@ SOURCE_FIGURE_DIR = FIGURES_DIR
 MANUSCRIPT_FIGURE_DIR = FIGURES_DIR / "manuscript"
 
 FIGURE_SET = [
-    ("Figure 1", "Performance: basic hedonic vs XGB (rolling, by year)",
-     "figure1_yearly_h1_xgb_fullsample.png", "Figure1_performance_hedonic_vs_xgb.png"),
-    ("Figure 2a", "Transaction volume geography (district map)",
-     "figure2_panel_a_with_names.png", "Figure2a_transaction_volume_map.png"),
-    ("Figure 2b", "Price geography (district map)",
-     "figure2_panel_b_with_names.png", "Figure2b_price_map.png"),
-    ("Figure 3", "R2oos by model and forecast horizon (Full + Subsample)",
-     "figure3_full_vs_subsample_split.png", "Figure3_r2_by_model_horizon.png"),
-    ("Figure 4", "R2oos by district and over time (h=1, amenity subsample)",
-     "figure4_appendix1_maintext_ready_subsample.png", "Figure4_r2_by_district_over_time.png"),
-    ("Figure 5", "Top variables by SHAP importance",
-     "figure5_mean_shap_district_dummy.png", "Figure5_top_shap_importance.png"),
-
-    ("Figure 6 Panel A", "District-level characteristic category importance, all features",
-     "figure6_shap_decomp_PanelA.png", "Figure6a_category_importance_by_district.png"),
-    ("Figure 6 Panel B", "District-level characteristic category importance, district identifiers removed",
-     "figure6_shap_decomp_PanelB.png", "Figure6b_category_importance_no_district.png"),
-    ("Figure 7", "District ranking by time-feature attribution share",
-     "figure7_time_share_ranking.png", "Figure7_district_time_share_ranking.png"),
-    ("Figure 8", "Building characteristic importance heatmap",
-     "figure8_building_shap_heatmap.png", "Figure8_building_importance_heatmap.png"),
+    (
+        "Figure 1",
+        "Performance: basic hedonic vs XGB (rolling, by year)",
+        "figure1_yearly_h1_xgb_fullsample.png",
+        "Figure1_performance_hedonic_vs_xgb.png",
+    ),
+    (
+        "Figure 2a",
+        "Transaction volume geography (district map)",
+        "figure2_panel_a_with_names.png",
+        "Figure2a_transaction_volume_map.png",
+    ),
+    (
+        "Figure 2b",
+        "Price geography (district map)",
+        "figure2_panel_b_with_names.png",
+        "Figure2b_price_map.png",
+    ),
+    (
+        "Figure 3",
+        "R2oos by model and forecast horizon (Full + Subsample)",
+        "figure3_full_vs_subsample_split.png",
+        "Figure3_r2_by_model_horizon.png",
+    ),
+    (
+        "Figure 4",
+        "R2oos by district and over time (h=1, amenity subsample)",
+        "figure4_appendix1_maintext_ready_subsample.png",
+        "Figure4_r2_by_district_over_time.png",
+    ),
+    (
+        "Figure 5",
+        "Top variables by SHAP importance",
+        "figure5_mean_shap_district_dummy.png",
+        "Figure5_top_shap_importance.png",
+    ),
+    (
+        "Figure 6 Panel A",
+        "District-level characteristic category importance, all features",
+        "figure6_shap_decomp_PanelA.png",
+        "Figure6a_category_importance_by_district.png",
+    ),
+    (
+        "Figure 6 Panel B",
+        "District-level characteristic category importance, district identifiers removed",
+        "figure6_shap_decomp_PanelB.png",
+        "Figure6b_category_importance_no_district.png",
+    ),
+    (
+        "Figure 7",
+        "District ranking by time-feature attribution share",
+        "figure7_time_share_ranking.png",
+        "Figure7_district_time_share_ranking.png",
+    ),
+    (
+        "Figure 8",
+        "Building characteristic importance heatmap",
+        "figure8_building_shap_heatmap.png",
+        "Figure8_building_importance_heatmap.png",
+    ),
 ]
 
 MAP_NOTES = """
@@ -67,8 +107,7 @@ def main() -> int:
         print(f"[package-figures] {label:>10}  {src}  ->  {dest}")
 
     rows = "\n".join(
-        f"| {label} | {caption} | `{src}` | `{dest}` |"
-        for label, caption, src, dest in FIGURE_SET
+        f"| {label} | {caption} | `{src}` | `{dest}` |" for label, caption, src, dest in FIGURE_SET
     )
     (MANUSCRIPT_FIGURE_DIR / "FIGURE_MAP.md").write_text(
         "# Manuscript figure files\n\n"
@@ -80,8 +119,11 @@ def main() -> int:
         f"{MAP_NOTES}\n",
         encoding="utf-8",
     )
-    print(f"[package-figures] wrote {MANUSCRIPT_FIGURE_DIR / 'FIGURE_MAP.md'} ({len(FIGURE_SET)} figures)")
+    print(
+        f"[package-figures] wrote {MANUSCRIPT_FIGURE_DIR / 'FIGURE_MAP.md'} ({len(FIGURE_SET)} figures)"
+    )
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

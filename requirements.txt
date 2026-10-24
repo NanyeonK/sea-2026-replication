@@ -1,17 +1,15 @@
-# Versions the published results were produced under. Pinned exactly, per coding_rules.md §4.
-#
-# Imported directly by this package:
-pandas==2.2.3
+# Pinned dependencies for the analysis code.
+# Data processing and estimation
 numpy==2.3.5
-matplotlib==3.10.1
-joblib==1.5.0            # build stage: loads the frozen model
-shap==0.50.0             # build stage only
-xgboost==3.0.0           # build stage only: required to unpickle the model joblib loads
-geopandas==1.1.2         # optional: only to regenerate Figure 2, if you supply the boundary file
-#
-# Not imported directly, pinned because the results were produced with them present and because
-# the packages above depend on them:
+pandas==2.2.3
 scipy==1.16.3
 scikit-learn==1.5.2
 statsmodels==0.14.5
+xgboost==3.0.0
+joblib==1.5.0
 pyyaml==6.0.1
+
+# SHAP attribution and figures
+shap==0.50.0
+matplotlib==3.10.1
+geopandas==1.1.2  # Used to regenerate Figure 2 from district boundaries.
