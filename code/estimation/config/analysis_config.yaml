@@ -1,0 +1,14 @@
+# Paths are relative to code/estimation/main.py.
+data:
+  input_path: "../../data/raw/seoul_apartment_transactions_with_building_info.csv"
+  output_dir: "../../output/rnr/"
+rolling_window:
+  initial_training_months: 30
+  validation_months: 6
+  final_training_months: 36
+  prediction_horizons: [1, 3, 6, 12]
+  step_months: 1
+shap:
+  enabled: true
+  sample_size: 1000
+  window_interval: 6
