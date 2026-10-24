@@ -1,13 +1,4 @@
-"""
-Evaluation Metrics Module for Rolling-window analysis
-
-Implements academic-standard evaluation metrics:
-- OOS R² (Out-of-Sample R-squared with test mean)
-- RMSE (Root Mean Squared Error)
-- MAE (Mean Absolute Error)
-- MAPE (Mean Absolute Percentage Error)
-- Diebold-Mariano Test with HAC (Newey-West) standard errors
-"""
+"""Forecast error metrics and HAC-adjusted Diebold-Mariano comparisons."""
 
 import numpy as np
 import pandas as pd
@@ -15,18 +6,12 @@ from typing import Tuple, Dict, List, Optional
 from scipy import stats
 import warnings
 
-
 # ============================================================================
 # Core Metrics
 # ============================================================================
 
 class EvaluationMetrics:
-    """
-    Academic-standard evaluation metrics for forecasting.
-
-    All metrics designed for out-of-sample evaluation
-    following econometric best practices.
-    """
+    """Calculate out-of-sample forecast error metrics."""
 
     @staticmethod
     def calculate_oos_r2(
@@ -196,7 +181,6 @@ class EvaluationMetrics:
             'mae': self.calculate_mae(y_true, y_pred),
             'mape': self.calculate_mape(y_true, y_pred)
         }
-
 
 # ============================================================================
 # Diebold-Mariano Test with HAC Standard Errors
@@ -392,7 +376,6 @@ def _get_significance_stars(p_value: float) -> str:
         return '*'
     else:
         return ''
-
 
 # ============================================================================
 # Model Comparison Utilities

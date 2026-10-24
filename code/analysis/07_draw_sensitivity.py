@@ -1,51 +1,33 @@
 #!/usr/bin/env python3
-"""Appendix B table — does the 5,000-row explanation draw drive the reported attribution?
-
-The SHAP figures explain the seven frozen refits on a fixed draw of 5,000 transactions from the
-final tenth of the amenity-complete sample. `code/build/03_draw_sensitivity.py` re-runs that same
-decomposition under three alternative seeds and once on the entire final tenth. This script reads
-what it wrote, formats Appendix B's table, and asserts the four claims the appendix makes.
-
-What it shows: the draw does no work. Removing it entirely moves every category-share endpoint by
-at most 0.9 percentage points, leaves the districts at the top and bottom of the time-share ranking
-unchanged, and leaves the global attribution ranking of Figure 5 identical. District orderings
-correlate with the shipped ordering at 0.92 or above under every alternative seed, and the rank
-correlation between a district's time share and its mean price stays near zero throughout.
-
-Reads a shipped CSV, so this runs in the default analysis stage without data/raw/.
-"""
+"""Format Appendix B sensitivity results for alternative SHAP explanation samples."""
 from __future__ import annotations
 import sys
 from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import _runlog  # noqa: F401  (starts the run log; see docs/ and the README's Run logs section)
-from _paths import DERIVED, TABLES, require  # noqa: E402
+import _runlog  # noqa: F401
+from _paths import DERIVED_DATA_DIR, TABLES_DIR, require  # noqa: E402
 
-SRC = DERIVED / "draw_sensitivity.csv"
-require(SRC)
+DRAW_SENSITIVITY_FILE = DERIVED_DATA_DIR / "draw_sensitivity.csv"
+require(DRAW_SENSITIVITY_FILE)
 
-# Condition label -> row label. `shipped` is the draw every other exhibit in the package uses, so it
-# is the baseline every rank correlation is measured against and it leads the table.
 ROW_LABELS = {
-    "shipped": "Shipped draw (seed 42, n = 5,000)",
+    "shipped": "Baseline draw (seed 42, n = 5,000)",
     "seed_7": "Alternative seed 7 (n = 5,000)",
     "seed_2026": "Alternative seed 2026 (n = 5,000)",
     "seed_31415": "Alternative seed 31415 (n = 5,000)",
     "entire_final_tenth": "Entire final tenth (no subsampling)",
 }
 
-# The four claims Appendix B makes, as thresholds. A claim the table cannot support should fail here
-# rather than reach a referee.
-MAX_ENDPOINT_SHIFT_PP = 1.0    # against the entire final tenth
-MIN_RANK_CORR = 0.90           # district orderings, any alternative draw
-MIN_GLOBAL_RANK_CORR = 0.99    # Figure 5's global ranking
-MAX_ABS_PRICE_CORR = 0.30      # time share vs district mean price, every condition
+MAX_ENDPOINT_SHIFT_PP = 1.0
+MIN_RANK_CORR = 0.90
+MIN_GLOBAL_RANK_CORR = 0.99
+MAX_ABS_PRICE_CORR = 0.30
 
 
 def main() -> int:
-    s = pd.read_csv(SRC).set_index("condition")
+    s = pd.read_csv(DRAW_SENSITIVITY_FILE).set_index("condition")
     missing = set(ROW_LABELS) - set(s.index)
     if missing:
         raise SystemExit(f"draw_sensitivity.csv is missing condition(s) {sorted(missing)}; "
@@ -68,9 +50,8 @@ def main() -> int:
         "Corr., time share vs price": [s.loc[c, "rank_corr_time_share_vs_district_price"]
                                        for c in ROW_LABELS],
     })
-    out.to_csv(TABLES / "TableB_draw_sensitivity.csv", index=False)
+    out.to_csv(TABLES_DIR / "TableB_draw_sensitivity.csv", index=False)
 
-    # Self-check. Each block is one sentence Appendix B prints.
     base, full = s.loc["shipped"], s.loc["entire_final_tenth"]
     alts = [c for c in ROW_LABELS if c not in ("shipped", "entire_final_tenth")]
     ok = True
@@ -110,7 +91,6 @@ def main() -> int:
     print(out.to_string(index=False))
     print("\nOVERALL:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

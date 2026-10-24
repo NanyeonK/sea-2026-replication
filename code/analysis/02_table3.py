@@ -1,31 +1,25 @@
 #!/usr/bin/env python3
-"""Table 3 — Diebold-Mariano (HAC) tests: XGBoost vs each model, Full & Subsample.
-Reproduces the manuscript's two Diebold-Mariano tables, Full and Subsample, from canonical
-data/derived/table3_all_pairwise_dm_hac_{full,subsample}.csv.
-"""
+"""Generate Table 3 from pairwise HAC-adjusted Diebold-Mariano results."""
 from __future__ import annotations
 import sys
 from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import _runlog  # noqa: F401  (starts the run log; see docs/ and the README's Run logs section)
-from _paths import DERIVED, TABLES, require  # noqa: E402
-from _labels import canonical_models  # noqa: E402
+import _runlog  # noqa: F401
+from _paths import DERIVED_DATA_DIR, TABLES_DIR, require  # noqa: E402
+from _labels import standardize_model_labels  # noqa: E402
 
-RNR = DERIVED
-OUT = TABLES
 HORIZONS = [1, 3, 6, 12]
-require(RNR / "table3_all_pairwise_dm_hac_full.csv",
-        RNR / "table3_all_pairwise_dm_hac_subsample.csv")
+require(DERIVED_DATA_DIR / "table3_all_pairwise_dm_hac_full.csv",
+        DERIVED_DATA_DIR / "table3_all_pairwise_dm_hac_subsample.csv")
 
 
 def build(panel: str, csv: str) -> pd.DataFrame:
-    df = pd.read_csv(RNR / csv)
-    # H3 -> H3g so the full panel names the specification the way Table 2 and the subsample panel
-    # do. No dedupe: neither pairwise file carries both labels, so the rename creates no duplicate.
+    df = pd.read_csv(DERIVED_DATA_DIR / csv)
+
     for c in ("Model_1", "Model_2"):
-        df = canonical_models(df, c)
+        df = standardize_model_labels(df, c)
     pairs = df[(df.Model_1 == "XGBoost") | (df.Model_2 == "XGBoost")]
     others = [m for m in
               pd.unique(pairs[["Model_1", "Model_2"]].values.ravel())
@@ -44,14 +38,14 @@ def build(panel: str, csv: str) -> pd.DataFrame:
             row[f"h={h}"] = f"{dm:.2f}{sig}"
         rows.append(row)
     out = pd.DataFrame(rows)
-    out.to_csv(OUT / f"Table3_{panel}_DM.csv", index=False)
+    out.to_csv(TABLES_DIR / f"Table3_{panel}_DM.csv", index=False)
     return out
 
 
 def main() -> int:
     full = build("Full", "table3_all_pairwise_dm_hac_full.csv")
     sub = build("Subsample", "table3_all_pairwise_dm_hac_subsample.csv")
-    # self-check vs the manuscript's printed values: XGBoost vs H4 h=1
+
     chk = {
         "Full vs H4 h=1": (full[full[""] == "vs H4"]["h=1"].iloc[0], "14.87"),
         "Sub vs H4 h=1": (sub[sub[""] == "vs H4"]["h=1"].iloc[0], "9.45"),
@@ -65,7 +59,6 @@ def main() -> int:
     print("\nSubsample panel:"); print(sub.to_string(index=False))
     print("\nOVERALL:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,14 +1,4 @@
-"""
-Rolling Window Engine for Rolling-window analysis
-
-Implements multi-horizon rolling window evaluation:
-- 84 rolling windows (30m train + 6m val + 36m final)
-- 4 prediction horizons: [1, 3, 6, 12] months
-- Train once per window, evaluate 4 times
-
-Key efficiency: Model training happens ONCE per window,
-evaluation at multiple horizons from same trained model.
-"""
+"""Construct rolling estimation windows and collect multi-horizon forecasts."""
 
 import pandas as pd
 import numpy as np
@@ -18,7 +8,6 @@ import warnings
 
 # Default prediction horizons
 PREDICTION_HORIZONS = [1, 3, 6, 12]
-
 
 # ============================================================================
 # Rolling Window Engine
@@ -288,31 +277,12 @@ class RollingWindowEngine:
             )
         return counts
 
-
 # ============================================================================
 # Window Result Storage
 # ============================================================================
 
 class WindowResults:
-    """
-    Storage for rolling window evaluation results.
-
-    Stores results for:
-    - 6 models (H1, H2, H3, H4, Ridge, XGBoost)
-    - 4 horizons (1, 3, 6, 12 months)
-    - 84 windows
-
-    Attributes
-    ----------
-    results : List[Dict]
-        List of result dictionaries
-    models : List[str]
-        Model names
-    horizons : List[int]
-        Prediction horizons
-    predictions : Dict
-        Stored predictions for each (window, model, horizon)
-    """
+    """Store model performance metrics and predictions by window and horizon."""
 
     MODELS = ['H1', 'H2', 'H3', 'H4', 'Ridge', 'XGBoost']
 
@@ -648,7 +618,6 @@ class WindowResults:
                 })
 
         return pd.DataFrame(records)
-
 
 # ============================================================================
 # Multi-Horizon Evaluation

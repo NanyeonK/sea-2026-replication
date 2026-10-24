@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
-"""
-R&R Revision Main Analysis Script
-
-Multi-horizon rolling window analysis with 6 models:
-- H1, H2, H3, H4: Hedonic OLS models
-- Ridge: L2 regularized regression
-- XGBoost: Gradient boosting with GPU acceleration
+"""Run rolling-window estimation for the full or amenity-complete sample.
 
 Usage:
-    python main_rnr_analysis.py [--quick-test] [--windows N]
+    python code/estimation/main.py --sample-type full --no-shap
+    python code/estimation/main.py --sample-type subsample --no-shap
 
-Arguments:
-    --quick-test    Run with 2 windows for testing
-    --windows N     Run with N windows (default: all)
-    --no-shap       Disable SHAP analysis
-    --no-dm         Disable Diebold-Mariano tests
+Use --windows to limit the estimation period and --help to list all options.
 """
 
 import sys
@@ -26,8 +17,8 @@ import gc
 
 # Use the same August 6 engine as the exhibit scripts.
 from pathlib import Path
-CODE = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(CODE / 'engine'))
+CODE_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(CODE_DIR / 'engine'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pandas as pd
@@ -80,7 +71,6 @@ try:
 except:
     GPU_AVAILABLE = False
 
-
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -102,7 +92,7 @@ def load_config(config_path: str = None) -> dict:
     return {
         'data': {
             'input_path': '../../data/raw/seoul_apartment_transactions_with_building_info.csv',
-            'output_dir': '../../output/rnr/'
+            'output_dir': '../../output/estimation/'
         },
         'rolling_window': {
             'initial_training_months': 30,
@@ -117,7 +107,6 @@ def load_config(config_path: str = None) -> dict:
             'window_interval': 6
         }
     }
-
 
 # ============================================================================
 # Main Analysis Pipeline
@@ -134,7 +123,7 @@ def run_analysis(
     xgb_refit_months: int = 12
 ):
     """
-    Run the full R&R analysis pipeline.
+    Run the rolling-window estimation pipeline.
 
     Parameters
     ----------
@@ -151,7 +140,7 @@ def run_analysis(
     """
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     print(f"\n{'='*60}")
-    print(f"R&R REVISION ANALYSIS")
+    print(f"ROLLING-WINDOW ESTIMATION")
     print(f"Started: {datetime.now()}")
     print(f"{'='*60}\n")
 
@@ -510,14 +499,13 @@ def run_analysis(
 
     return results, dm_results, outputs
 
-
 # ============================================================================
 # Entry Point
 # ============================================================================
 
 def main():
     parser = argparse.ArgumentParser(
-        description='R&R Revision Multi-Horizon Analysis'
+        description='Multi-horizon rolling-window estimation'
     )
     parser.add_argument(
         '--quick-test', action='store_true',
@@ -580,7 +568,6 @@ def main():
     )
 
     return 0
-
 
 if __name__ == '__main__':
     sys.exit(main())

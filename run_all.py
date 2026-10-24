@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-"""Run exhibit scripts after supplying the inputs listed in data/README.md.
+"""Run the exhibit scripts using the inputs listed in data/README.md.
 
-python3 run_all.py --list       list exhibit steps without executing them
-python3 run_all.py              tables and figures from prepared intermediate inputs
-python3 run_all.py --with-build rebuild Table 1, SHAP inputs and Appendix C first
-
-Main rolling-window estimation has a separate entrypoint: code/estimation/main.py.
-This code-only repository does not include any input data or reference outputs.
+Use --list to display the steps or --with-build to rebuild intermediate inputs.
+Main model estimation is provided by code/estimation/main.py.
 """
 from __future__ import annotations
 
@@ -16,54 +12,47 @@ import subprocess
 import sys
 from pathlib import Path
 
-PKG = Path(__file__).resolve().parent
-CODE = PKG / "code"
+PROJECT_ROOT = Path(__file__).resolve().parent
+CODE_DIR = PROJECT_ROOT / "code"
 
 BUILD_STEPS = [
-    ("Table 1 panels (needs data/raw)", CODE / "build" / "01_table1_panels.py"),
-    ("SHAP bridges for Figures 5-8 (needs data/raw + frozen model)",
-     CODE / "build" / "02_shap_bridges.py"),
+    ("Table 1 panels (needs data/raw)", CODE_DIR / "build" / "01_table1_panels.py"),
+    ("SHAP inputs for Figures 5-8 (needs data/raw + frozen model)",
+     CODE_DIR / "build" / "02_shap_bridges.py"),
     ("Appendix B: SHAP draw sensitivity (needs data/raw + frozen models; ~8 min)",
-     CODE / "build" / "03_draw_sensitivity.py"),
+     CODE_DIR / "build" / "03_draw_sensitivity.py"),
     ("Appendix C: estimate H6, the maximal linear specification (needs data/raw; ~20 min)",
-     CODE / "build" / "04_appendix_c.py"),
+     CODE_DIR / "build" / "04_appendix_c.py"),
 ]
 
 ANALYSIS_STEPS = [
-    ("Table 2 (Full + Amenity) + self-check", CODE / "analysis" / "01_table2.py"),
-    ("Table 3 (Full + Subsample DM, HAC) + self-check", CODE / "analysis" / "02_table3.py"),
-    ("Per-district OOS R2 (Figure 4 Panel A input)", CODE / "analysis" / "03_district_r2.py"),
-    ("Figures 1-8", CODE / "analysis" / "04_figures.py"),
-    ("Manuscript-numbered figure set + FIGURE_MAP", CODE / "analysis" / "05_package_figures.py"),
-    ("Appendix: SHAP attribution by refit + self-check",
-     CODE / "analysis" / "06_window_sensitivity.py"),
-    ("Appendix B: SHAP draw sensitivity + self-check",
-     CODE / "analysis" / "07_draw_sensitivity.py"),
-    ("Appendix C: predictor map + H6 out-of-sample R2 + self-check",
-     CODE / "analysis" / "08_appendix_c.py"),
+    ("Table 2 (Full + Amenity) and reference checks", CODE_DIR / "analysis" / "01_table2.py"),
+    ("Table 3 (Full + Subsample DM, HAC) and reference checks", CODE_DIR / "analysis" / "02_table3.py"),
+    ("Per-district OOS R2 (Figure 4 Panel A input)", CODE_DIR / "analysis" / "03_district_r2.py"),
+    ("Figures 1-8", CODE_DIR / "analysis" / "04_figures.py"),
+    ("Manuscript-numbered figure set + FIGURE_MAP", CODE_DIR / "analysis" / "05_package_figures.py"),
+    ("Appendix: SHAP attribution by refit and reference checks",
+     CODE_DIR / "analysis" / "06_window_sensitivity.py"),
+    ("Appendix B: SHAP draw sensitivity and reference checks",
+     CODE_DIR / "analysis" / "07_draw_sensitivity.py"),
+    ("Appendix C: predictor map + H6 out-of-sample R2 and reference checks",
+     CODE_DIR / "analysis" / "08_appendix_c.py"),
 ]
 
-
-
-# matplotlib stamps a creation timestamp into every PDF it writes, which used to make the PDFs
-# non-reproducible and was the stated reason for excluding them from the integrity ledger. It is
-# avoidable: matplotlib honours SOURCE_DATE_EPOCH, the reproducible-builds convention, and pins the
-# stamp to it. Fixing the value here makes the PDFs byte-identical across runs, so they are hashed
-# like everything else. The value is arbitrary but must not change; it is 2023-11-14T22:13:20Z.
 SOURCE_DATE_EPOCH = "1700000000"
 
 
 def run(steps: list[tuple[str, Path]]) -> list[str]:
-    env = {**os.environ, "PYTHONPATH": str(CODE),
+    env = {**os.environ, "PYTHONPATH": str(CODE_DIR),
            "SOURCE_DATE_EPOCH": SOURCE_DATE_EPOCH}
     failures = []
     for label, script in steps:
-        print(f"\n>>> {label}\n    {script.relative_to(PKG)}")
-        rc = subprocess.run([sys.executable, str(script)], cwd=str(PKG), env=env).returncode
+        print(f"\n>>> {label}\n    {script.relative_to(PROJECT_ROOT)}")
+        rc = subprocess.run([sys.executable, str(script)], cwd=str(PROJECT_ROOT), env=env).returncode
         print(f"    -> {'OK' if rc == 0 else f'FAIL (exit {rc})'}")
         if rc != 0:
             failures.append(label)
-            break          # stop at the first failure; later steps consume its output
+            break
     return failures
 
 
@@ -78,11 +67,11 @@ def main() -> int:
 
     if args.list:
         for i, (label, script) in enumerate(steps, 1):
-            print(f"{i:2d}. {label}\n    {script.relative_to(PKG)}")
+            print(f"{i:2d}. {label}\n    {script.relative_to(PROJECT_ROOT)}")
         return 0
 
     print("=" * 78)
-    print("sea_2026 replication package")
+    print("Seoul housing valuation analysis code")
     print("stage: " + ("build + analysis" if args.with_build else "analysis (user-supplied inputs)"))
     print("=" * 78)
 
@@ -94,10 +83,9 @@ def main() -> int:
         print("Nothing after that step ran. Fix the cause and re-run.")
         return 1
     print("ALL STEPS OK.")
-    print(f"  tables  -> {(PKG / 'output/tables').relative_to(PKG)}")
-    print(f"  figures -> {(PKG / 'output/figures/manuscript').relative_to(PKG)}")
+    print(f"  tables  -> {(PROJECT_ROOT / 'output/tables').relative_to(PROJECT_ROOT)}")
+    print(f"  figures -> {(PROJECT_ROOT / 'output/figures/manuscript').relative_to(PROJECT_ROOT)}")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

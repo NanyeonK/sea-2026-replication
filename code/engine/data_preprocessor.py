@@ -1,14 +1,6 @@
-"""
-Data Preprocessing Module
+"""Prepare transaction data and model-specific feature matrices.
 
-Implements dual encoding pipelines:
-- DummyEncodingPipeline: For Hedonic (H1-H4) and Ridge models
-- LabelEncodingPipeline: For XGBoost model (existing approach)
-
-Also includes:
-- District extraction from 시군구
-- Repeat sales flag generation
-- Data loading and cleaning
+Hedonic and Ridge models use dummy encoding; XGBoost uses label encoding.
 """
 
 import pandas as pd
@@ -17,7 +9,6 @@ from sklearn.preprocessing import LabelEncoder
 from typing import Tuple, List, Dict, Any, Optional
 import re
 import warnings
-
 
 # ============================================================================
 # Constants
@@ -37,7 +28,6 @@ PRICE_VARIABLES_TO_EXCLUDE = [
     'sale_price', 'unit_price', 'total_price', 'contract_amount',
     'deposit', 'monthly_rent', 'price_per_sqm', 'log_price_per_sqm'
 ]
-
 
 # ============================================================================
 # Temporal Feature Functions (for Forecasting)
@@ -181,7 +171,6 @@ def create_alternative_time_trends(df: pd.DataFrame) -> pd.DataFrame:
 
     return result
 
-
 # ============================================================================
 # Utility Functions
 # ============================================================================
@@ -247,7 +236,6 @@ def generate_repeat_sales_flag(
     repeat_sales_flag = transaction_counts >= min_transactions
 
     return repeat_sales_flag, property_id
-
 
 # ============================================================================
 # Dummy Encoding Pipeline (for Hedonic and Ridge)
@@ -535,30 +523,15 @@ class DummyEncodingPipeline:
         self.fit(df)
         return self.transform(df, include_district, include_year, include_month, include_apt_complex)
 
-
 # ============================================================================
 # Label Encoding Pipeline (for XGBoost)
 # ============================================================================
 
 class LabelEncodingPipeline:
-    """
-    Creates label-encoded features for XGBoost.
+    """Encode categorical features for XGBoost.
 
-    Preserves the existing approach from rolling_window_3year_strategy.py:
-    - Top N categories retained per column
-    - Others collapsed to 'Other'
-    - LabelEncoder applied to each categorical column
-
-    Attributes
-    ----------
-    top_n_categories : int
-        Number of top categories to keep (default: 100)
-    encoders : Dict[str, LabelEncoder]
-        Stored LabelEncoders for each column
-    top_categories : Dict[str, List]
-        Top categories for each column
-    fitted : bool
-        Whether the pipeline has been fitted
+    Retain the most frequent categories, group remaining values as Other and
+    apply one LabelEncoder per categorical column.
     """
 
     def __init__(self, top_n_categories: int = 100):
@@ -634,27 +607,12 @@ class LabelEncodingPipeline:
         """Fit and transform in one step."""
         return self.fit(df).transform(df)
 
-
 # ============================================================================
 # Dual Encoding Processor (Combined)
 # ============================================================================
 
 class DualEncodingProcessor:
-    """
-    Processes data for both Hedonic/Ridge and XGBoost models.
-
-    Maintains a single source of truth for data while producing
-    model-specific feature matrices.
-
-    Attributes
-    ----------
-    dummy_pipeline : DummyEncodingPipeline
-        Pipeline for dummy encoding (Hedonic, Ridge)
-    label_pipeline : LabelEncodingPipeline
-        Pipeline for label encoding (XGBoost)
-    config : Dict
-        Configuration dictionary
-    """
+    """Prepare shared transaction data for hedonic, Ridge and XGBoost models."""
 
     def __init__(
         self,
@@ -703,7 +661,7 @@ class DualEncodingProcessor:
             df = df[df['transaction_type'] == transaction_type].copy()
             print(f"  After filtering '{transaction_type}': {len(df):,} rows")
 
-        # Extract district (구) from 시군구 - always extract to ensure correct format
+        # Extract district (구) from 시군구.
         if '시군구' in df.columns:
             df['district'] = extract_district(df)
             print(f"  Extracted district (구): {df['district'].nunique()} unique districts")
@@ -934,7 +892,6 @@ class DualEncodingProcessor:
         """
         return df['log_price_per_sqm'].copy()
 
-
 # ============================================================================
 # Validation Functions
 # ============================================================================
@@ -990,7 +947,6 @@ def validate_encoding_shapes(
     Dict[str, Any]
         Validation results with expected vs actual shapes
     """
-    # Updated for new specifications:
     # H1: 3 structural + 24 district = 27
     # H2: 3 structural + 1 time_trend + 11 month + 24 district = 39
     # H3: H2 + 3 binary + 4 count = 46

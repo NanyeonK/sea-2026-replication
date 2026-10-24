@@ -1,12 +1,4 @@
-"""
-SHAP Analyzer Module for R&R Revision
-
-Enhanced SHAP analysis with:
-- XGBoost SHAP value calculation
-- Temporal stability analysis (SHAP importance across windows)
-- Regional SHAP breakdown by district
-- GPU-to-CPU model conversion for SHAP compatibility
-"""
+"""Calculate XGBoost SHAP values and summarize variation across windows and districts."""
 
 import pandas as pd
 import numpy as np
@@ -28,7 +20,6 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-
 
 # ============================================================================
 # SHAP Analyzer

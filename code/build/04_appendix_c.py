@@ -1,27 +1,8 @@
 #!/usr/bin/env python3
-"""Appendix C build stage — estimate H6, the maximal linear specification, over the same windows.
+"""Estimate Appendix C hedonic specifications over the study rolling windows.
 
-Appendix C asks how much of the gap between XGBoost and H4 is the predictor set rather than the
-functional form. Answering it needs one specification that does not exist in Table 2, so this is
-the only step in the package that estimates a model rather than reducing stored output. It needs
-data/raw and takes roughly twenty minutes.
-
-H6 = H5 + dong fixed effects + the remaining amenity and accessibility measures.
-
-  H5 already carries every engineered term XGBoost holds, including all 25 area-by-district
-  interactions. What it lacks is finer geography and a handful of complex-level measures. The raw
-  location field is dong level, 242 values inside the amenity subsample, against the 25 districts
-  the linear ladder uses. H6 swaps the 24 district dummies for 241 dong dummies, which nest within
-  districts so both cannot enter, and adds the subway walking-time band, the subway line, the
-  welfare facility count, the charger count and two indicators.
-
-  The apartment-complex, lot-number and road-name identifiers stay out. H3c already places a
-  high-cardinality location identifier in a linear specification and is the weakest specification
-  in Table 2, so that question is answered rather than skipped.
-
-H4 and H5 are re-estimated here as well and the script asserts they reproduce their published
-Table 2 values. A new specification is only interpretable if the harness reproduces the old ones,
-so a mismatch aborts rather than writing output.
+H6 replaces district effects with dong effects and adds amenity and accessibility
+variables. H4 and H5 are also estimated for comparison with the reference results.
 """
 from __future__ import annotations
 
@@ -34,8 +15,8 @@ import pandas as pd
 import statsmodels.api as sm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import _runlog  # noqa: F401  (starts the run log; see docs/ and the README's Run logs section)
-from _paths import DERIVED, RAW_TRANSACTIONS, engine_path, require  # noqa: E402
+import _runlog  # noqa: F401
+from _paths import DERIVED_DATA_DIR, RAW_TRANSACTIONS, engine_path, require  # noqa: E402
 
 sys.path.insert(0, str(engine_path()))
 from data_preprocessor import DualEncodingProcessor  # noqa: E402
@@ -44,11 +25,9 @@ from rolling_window_engine import RollingWindowEngine  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
-OUT = DERIVED / "appendix_c_window_level.csv"
+APPENDIX_RESULTS_FILE = DERIVED_DATA_DIR / "appendix_c_window_level.csv"
 HORIZONS = [1, 3, 6, 12]
 
-# Published Table 2, amenity panel. The re-estimation must land on these or the harness is not the
-# one that produced the deposit, and H6 cannot be read against it.
 PUBLISHED = {
     ("H4", 1): 0.667153, ("H4", 3): 0.617393, ("H4", 6): 0.540189, ("H4", 12): 0.370290,
     ("H5", 1): 0.634923, ("H5", 3): 0.591332, ("H5", 6): 0.525379, ("H5", 12): 0.377766,
@@ -62,24 +41,18 @@ EXTRA_BINARY = ["has_cctv", "has_el_charger"]
 
 
 def oos_r2(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """Out-of-sample R2 against the mean of the test window, as the frozen engine computes it."""
+    """Calculate out-of-sample R2 using the test-window mean."""
     ss_res = float(np.sum((y_true - y_pred) ** 2))
     ss_tot = float(np.sum((y_true - y_true.mean()) ** 2))
     return float("nan") if ss_tot == 0 else 1.0 - ss_res / ss_tot
 
 
 def level_maps(df: pd.DataFrame) -> dict[str, list[str]]:
-    """Fix the dummy level set on the whole sample, as the project's pipeline does for districts.
-
-    Levels are fixed once rather than per window so a column means the same thing in the training
-    and prediction matrices. Missing values become their own level, because XGBoost routes missing
-    values rather than dropping the row and a linear specification that dropped them would be
-    handed an easier sample than the model it is compared with.
-    """
+    """Fix categorical levels across windows, treating missing values as a level."""
     maps: dict[str, list[str]] = {}
     for c in EXTRA_CATEGORICAL + [DONG_COL]:
         v = df[c].fillna("__MISSING__").astype(str)
-        ref = v.value_counts().index[0]          # most frequent level is the reference
+        ref = v.value_counts().index[0]
         maps[c] = [x for x in sorted(v.unique()) if x != ref]
     return maps
 
@@ -184,11 +157,10 @@ def main() -> int:
               f"used to interpret a new one.")
         return 4
 
-    res.to_csv(OUT, index=False)
-    print(f"[appendix-c] wrote {OUT.name} ({len(res)} rows, "
+    res.to_csv(APPENDIX_RESULTS_FILE, index=False)
+    print(f"[appendix-c] wrote {APPENDIX_RESULTS_FILE.name} ({len(res)} rows, "
           f"H6 mean R2 {agg.loc[('H6', 1)]:.4f} at h=1)")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

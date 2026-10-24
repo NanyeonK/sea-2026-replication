@@ -7,7 +7,7 @@ The study uses Seoul apartment sales from June 2015 to May 2025 and complex-leve
 - [MOLIT apartment sale transactions](https://www.data.go.kr/data/15126469/openapi.do)
 - [K-APT apartment complex information](https://www.data.go.kr/data/15058453/openapi.do)
 
-Both portal pages list free access and “이용허락범위 제한 없음” (no restriction on the scope of permitted use), checked on 24 October 2026. API access requires an application and an API key. Keep the key outside the repository.
+API access is free and requires registration and an API key. Consult each provider for current terms and documentation. Keep API keys outside the repository.
 
 The transaction register can change after contracts are cancelled, corrected or reported late. A fresh download for the same period may differ from the extract used in the study.
 
@@ -34,11 +34,11 @@ Key fields read by the code include:
 | `total_parking`, `elevator_count`, `cctv_count`, `edu_count` | Complex amenities used by the hedonic specifications |
 | `has_parking`, `has_elevator`, `has_subway` | Binary amenity indicators |
 
-This table identifies key fields; the original merged schema contains additional predictors. The authoritative field handling and feature exclusions are in `code/engine/data_preprocessor.py`. Supply the original schema when reproducing the reported models.
+This table identifies key fields; the original merged schema contains additional predictors. Field handling and feature exclusions are defined in `code/engine/data_preprocessor.py`. Supply the original schema when reproducing the reported models.
 
 ## Inputs for the exhibit scripts
 
-The original replication archive contains the prepared inputs below. They are not committed to this repository and are not automatically reconstructed by running the main estimation commands. The archive's intermediate-file preparation is a separate step.
+The exhibit scripts require the prepared inputs below. These files are supplied separately. Running the main estimation commands does not automatically create this intermediate file layout.
 
 ```text
 data/derived/

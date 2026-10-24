@@ -1,14 +1,4 @@
-"""
-Model Definitions Module for Rolling-window analysis
-
-Implements 6 models for housing price forecasting:
-- H1: Basic Hedonic (area, floor, building_age, district FE)
-- H2: Temporal Hedonic (H1 + year FE + month FE)
-- H3: Full Hedonic (H2 + amenities)
-- H4: District-Specific (25 separate H3 models)
-- Ridge: L2 regularized regression with dummy encoding
-- XGBoost: Gradient boosting with label encoding
-"""
+"""Hedonic, Ridge and XGBoost model specifications and estimation helpers."""
 
 import pandas as pd
 import numpy as np
@@ -79,7 +69,6 @@ HEDONIC_VARIABLE_SETS = {
         'expected_coefficients': 47,  # 3 + 1 + 11 + 24 + 3 + 4 + intercept
     },
 
-
     'H3g': {
         'name': 'Gu FE Hedonic Model',
         'description': 'H3 with explicit gu (district) fixed effects -- subsample label',
@@ -149,27 +138,12 @@ HEDONIC_VARIABLE_SETS = {
     }
 }
 
-
 # ============================================================================
 # Model Factory
 # ============================================================================
 
 class ModelFactory:
-    """
-    Factory for creating and training all 6 model types.
-
-    Handles:
-    - Hedonic OLS models (H1-H4) with statsmodels
-    - Ridge regression with sklearn
-    - XGBoost with GPU acceleration
-
-    Attributes
-    ----------
-    gpu_available : bool
-        Whether GPU is available for XGBoost
-    gpu_device : str
-        GPU device setting ('cuda' or 'cpu')
-    """
+    """Create and fit hedonic OLS, Ridge and XGBoost models."""
 
     def __init__(
         self,
@@ -454,22 +428,12 @@ class ModelFactory:
             model.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
             return model, default_params
 
-
 # ============================================================================
 # Hedonic Model Builder
 # ============================================================================
 
 class HedonicModelBuilder:
-    """
-    Builds feature matrices for H1-H5 Hedonic specifications.
-
-    Uses DummyEncodingPipeline for proper econometric encoding.
-
-    Attributes
-    ----------
-    dummy_pipeline : DummyEncodingPipeline
-        Pipeline for creating dummy variables
-    """
+    """Build hedonic feature matrices using dummy encoding."""
 
     def __init__(self, dummy_pipeline=None):
         if dummy_pipeline is None:
@@ -587,7 +551,6 @@ class HedonicModelBuilder:
         if 'expected_coefficients' in spec:
             return spec['expected_coefficients']
         return spec.get('expected_coefficients_per_model', 0)
-
 
 # ============================================================================
 # Model Wrapper for Predictions

@@ -1,19 +1,16 @@
-"""Global category/color configuration — single source of truth."""
+"""Display labels, feature categories and colors shared by the figures."""
 
-# Canonical category names and colors (frozen 2026-02-21)
 CATEGORY_PALETTE = {
-    "Building":      "#CC3311",   # red
-    "Amenity":       "#009988",   # teal
-    "Accessibility": "#EE3377",   # pink
-    "Location":      "#0077BB",   # blue
-    "Time":          "#EE7733",   # orange
-    "Other":         "#AAAAAA",   # grey
+    "Building":      "#CC3311",
+    "Amenity":       "#009988",
+    "Accessibility": "#EE3377",
+    "Location":      "#0077BB",
+    "Time":          "#EE7733",
+    "Other":         "#AAAAAA",
 }
 
-# Horizon colors for multi-horizon bar charts (reuse palette)
-HORIZON_COLORS = ["#CC3311", "#009988", "#0077BB", "#EE7733"]  # h=1,3,6,12
+HORIZON_COLORS = ["#CC3311", "#009988", "#0077BB", "#EE7733"]
 
-# Canonical display names for variables (summary-statistics conventions)
 VARIABLE_DISPLAY = {
     "area_numeric":       "Area (m²)",
     "floor":              "Floor",
@@ -54,7 +51,6 @@ VARIABLE_DISPLAY = {
     "district":           "District",
 }
 
-# Feature → category mapping
 STRUCTURAL_FEATURES = {"area_numeric", "floor", "build_year", "building_age",
                        "area_sq", "log_area", "building_age_sq", "area_x_floor"}
 AMENITY_FEATURES = {"total_parking", "cctv_count", "elevator_count", "edu_count",

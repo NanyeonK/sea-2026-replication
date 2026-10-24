@@ -1,19 +1,7 @@
-"""Run logging — every script records what the README has to state.
+"""Record software versions, input hashes, output files and elapsed runtime.
 
-The Social Science Data Editors README template asks for software versions, package versions, hardware and
-wall-clock runtime, and JF ships log files as Computational Materials. Those are measurements, so
-they are collected at run time rather than recalled at submission time.
-
-Importing this module starts a log. It writes a header immediately and, via `atexit`, a footer
-with the outputs and the elapsed time — so a script that crashes still leaves a log saying how far
-it got. Scripts do not have to call anything: `_paths.require()` registers inputs automatically,
-and outputs are detected by modification time. The one thing a script must declare explicitly is a
-random seed, because no automatic method can tell which integer was intended as one.
-
-    from _runlog import seed
-    seed(42)                     # sets numpy + stdlib RNGs and records the value
-
-Log path: output/logs/<script>_<UTC timestamp>.log
+Importing this module starts a log in output/logs/. Use seed(value) to set
+and record the NumPy and Python random seeds.
 """
 from __future__ import annotations
 
@@ -27,24 +15,22 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-PKG = Path(__file__).resolve().parents[1]
-LOGDIR = PKG / "output" / "logs"
-LOGDIR.mkdir(parents=True, exist_ok=True)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOG_DIR = PROJECT_ROOT / "output" / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 _START_WALL = time.time()
 _START_STAMP = datetime.now(timezone.utc)
 _SCRIPT = Path(sys.argv[0]).resolve() if sys.argv and sys.argv[0] else Path("interactive")
 _STEM = _SCRIPT.stem or "interactive"
-_LOG = LOGDIR / f"{_STEM}_{_START_STAMP.strftime('%Y%m%dT%H%M%SZ')}.log"
+_LOG = LOG_DIR / f"{_STEM}_{_START_STAMP.strftime('%Y%m%dT%H%M%SZ')}.log"
 
 _inputs: list[Path] = []
 _seeds: list[tuple[str, int]] = []
-# Directories whose newly written files count as this run's outputs.
-_WATCH = [PKG / "output", PKG / "data" / "derived", PKG / "docs"]
 
-# Packages worth recording. JFE asks for "all modules, libraries, toolboxes, packages"; these are
-# the ones this package can import. Missing ones are reported as such rather than skipped.
-_PACKAGES = ["pandas", "numpy", "scipy", "sklearn", "statsmodels", "xgboost", "shap",
+_OUTPUT_DIRECTORIES = [PROJECT_ROOT / "output", PROJECT_ROOT / "data" / "derived", PROJECT_ROOT / "docs"]
+
+_DEPENDENCIES = ["pandas", "numpy", "scipy", "sklearn", "statsmodels", "xgboost", "shap",
              "matplotlib", "geopandas", "joblib", "yaml", "pyarrow"]
 
 
@@ -58,26 +44,21 @@ def sha256(path: Path) -> str:
 
 def _rel(p: Path) -> str:
     try:
-        return str(p.relative_to(PKG))
+        return str(p.relative_to(PROJECT_ROOT))
     except ValueError:
         return str(p)
 
 
 def _git() -> str:
-    """Commit of the package itself, or a plain statement that there is none.
-
-    This used to run `git rev-parse` with cwd=PKG, which walked up into the private parent
-    repository and published ITS commit hash plus a "(dirty)" flag in every shipped log. A deposit
-    should report its own provenance or nothing. If the deposit is not itself a repository, say so.
-    """
+    """Return the repository commit and working-tree status, when available."""
     try:
-        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=PKG,
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=PROJECT_ROOT,
                              capture_output=True, text=True, timeout=10)
-        if top.returncode != 0 or Path(top.stdout.strip()).resolve() != PKG:
+        if top.returncode != 0 or Path(top.stdout.strip()).resolve() != PROJECT_ROOT:
             return "not a standalone git repository"
-        rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PKG,
+        rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT,
                              capture_output=True, text=True, timeout=10)
-        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=PKG,
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=PROJECT_ROOT,
                                capture_output=True, text=True, timeout=20)
         state = "dirty" if dirty.stdout.strip() else "clean"
         return f"{rev.stdout.strip()} ({state})"
@@ -88,7 +69,7 @@ def _git() -> str:
 def _packages() -> list[str]:
     import importlib
     rows = []
-    for name in _PACKAGES:
+    for name in _DEPENDENCIES:
         try:
             mod = importlib.import_module(name)
             rows.append(f"    {name:<14} {getattr(mod, '__version__', 'version unknown')}")
@@ -106,14 +87,14 @@ def _memory() -> str:
 
 
 def register_input(path: Path) -> None:
-    """Called by _paths.require(); records an input and its hash."""
+    """Record an input path and its SHA-256 hash."""
     p = Path(path)
     if p.exists() and p not in _inputs:
         _inputs.append(p)
 
 
 def seed(value: int, *, label: str = "global") -> int:
-    """Set and record an RNG seed. Seeds are literals in the code, and they are logged."""
+    """Set and record the NumPy and Python random seeds."""
     import random
     random.seed(value)
     try:
@@ -126,19 +107,17 @@ def seed(value: int, *, label: str = "global") -> int:
 
 
 def _write_header() -> None:
-    lock = PKG / "requirements.txt"
+    lock = PROJECT_ROOT / "requirements.txt"
     lines = [
         f"# run log — {_STEM}",
         f"started_utc      : {_START_STAMP.isoformat()}",
         f"script           : {_rel(_SCRIPT)}",
         f"argv             : {' '.join(sys.argv[1:]) or '(none)'}",
-        # Deliberately package-relative. Logging os.getcwd() published the author's username and
-        # the private parent repository's directory name in every shipped log (found 2026-07-30).
+
         f"cwd              : {_rel(Path.cwd())}",
         "",
         "## environment",
-        # Interpreter path omitted for the same reason as cwd: a venv under the author's home
-        # would leak the username. The version is what the README has to state.
+
         f"    python       {sys.version.split()[0]}",
         f"    os           {platform.system()} {platform.release()}",
         f"    machine      {platform.machine()}, {os.cpu_count()} logical CPUs, "
@@ -165,15 +144,13 @@ def _write_footer() -> None:
               or ["    (none declared)"])
 
     written: list[Path] = []
-    for root in _WATCH:
+    for root in _OUTPUT_DIRECTORIES:
         if not root.exists():
             continue
         for p in root.rglob("*"):
-            # Strictly after this run started. An earlier tolerance of one second pulled in the
-            # previous step's outputs when steps ran back to back, which made the log claim
-            # authorship of files it did not write.
+
             if p.is_file() and p != _LOG and p.suffix != ".pyc" \
-                    and p.parent != LOGDIR \
+                    and p.parent != LOG_DIR \
                     and p.stat().st_mtime > _START_WALL:
                 written.append(p)
     lines += ["", "## outputs written by this run (sha256)"]
@@ -184,7 +161,6 @@ def _write_footer() -> None:
               f"finished_utc     : {datetime.now(timezone.utc).isoformat()}", ""]
     with _LOG.open("a", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
-
 
 _write_header()
 atexit.register(_write_footer)

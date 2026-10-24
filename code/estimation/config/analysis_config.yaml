@@ -1,7 +1,7 @@
 # Paths are relative to code/estimation/main.py.
 data:
   input_path: "../../data/raw/seoul_apartment_transactions_with_building_info.csv"
-  output_dir: "../../output/rnr/"
+  output_dir: "../../output/estimation/"
 rolling_window:
   initial_training_months: 30
   validation_months: 6

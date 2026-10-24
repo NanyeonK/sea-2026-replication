@@ -1,14 +1,4 @@
-"""
-Output Generator Module for R&R Revision
-
-Generates publication-ready output files:
-- Table 2: Main results (Model x Horizon metrics)
-- Window-level results CSV
-- Hedonic specification comparison (Appendix)
-- DM test results matrix
-- SHAP temporal stability CSV
-- Repeat sales results CSV
-"""
+"""Write model performance summaries, window results and comparison tables."""
 
 import pandas as pd
 import numpy as np
@@ -16,14 +6,13 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import os
 
-
 # ============================================================================
 # Output Generator
 # ============================================================================
 
 class OutputGenerator:
     """
-    Generates all output files for R&R revision.
+    Write performance and comparison outputs.
 
     Attributes
     ----------
@@ -335,7 +324,6 @@ class OutputGenerator:
         print(f"\nAll outputs generated with timestamp: {self.timestamp}")
 
         return outputs
-
 
 # ============================================================================
 # LaTeX Table Formatters
