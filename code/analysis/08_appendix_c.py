@@ -25,8 +25,7 @@ HORIZONS = [1, 3, 6, 12]
 
 MODEL_SPECIFICATIONS = ["H1", "H2", "H3g", "H3c", "H4", "H5", "Ridge", "H6", "XGBoost"]
 PREDICTOR_GROUPS: list[tuple[str, dict[str, str]]] = [
-    ("Floor area, floor, recorded building age", {s: "Y" for s in MODEL_SPECIFICATIONS}),
-    ("Construction year", {"XGBoost": "Y"}),
+    ("Structural attributes", {s: "Y" for s in MODEL_SPECIFICATIONS}),
     ("Linear time trend", {s: "Y" for s in MODEL_SPECIFICATIONS if s != "H1"}),
     (
         "Month fixed effects (11)",
