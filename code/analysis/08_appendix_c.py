@@ -25,7 +25,8 @@ HORIZONS = [1, 3, 6, 12]
 
 MODEL_SPECIFICATIONS = ["H1", "H2", "H3g", "H3c", "H4", "H5", "Ridge", "H6", "XGBoost"]
 PREDICTOR_GROUPS: list[tuple[str, dict[str, str]]] = [
-    ("Floor area, floor, building age", {s: "Y" for s in MODEL_SPECIFICATIONS}),
+    ("Floor area, floor, recorded building age", {s: "Y" for s in MODEL_SPECIFICATIONS}),
+    ("Construction year", {"XGBoost": "Y"}),
     ("Linear time trend", {s: "Y" for s in MODEL_SPECIFICATIONS if s != "H1"}),
     (
         "Month fixed effects (11)",
@@ -33,7 +34,7 @@ PREDICTOR_GROUPS: list[tuple[str, dict[str, str]]] = [
     ),
     ("Contract month and year, as levels", {"XGBoost": "Y"}),
     (
-        "District fixed effects (24)",
+        "District indicators (24) / encoded category",
         {
             "H1": "Y",
             "H2": "Y",
@@ -41,12 +42,12 @@ PREDICTOR_GROUPS: list[tuple[str, dict[str, str]]] = [
             "H4": "separate",
             "H5": "Y",
             "Ridge": "Y",
-            "XGBoost": "Y",
+            "XGBoost": "encoded",
         },
     ),
-    ("Dong fixed effects (241)", {"H6": "Y", "XGBoost": "Y"}),
-    ("Apartment complex identifier", {"H3c": "Y", "XGBoost": "Y"}),
-    ("Lot number, road name", {"XGBoost": "Y"}),
+    ("Dong indicators (241) / encoded category", {"H6": "Y", "XGBoost": "encoded"}),
+    ("Complex-name indicators / encoded category", {"H3c": "200", "XGBoost": "encoded"}),
+    ("Lot number, road name", {"XGBoost": "encoded"}),
     (
         "Binary: parking, elevator, subway",
         {s: "Y" for s in ("H3g", "H3c", "H4", "H5", "Ridge", "H6", "XGBoost")},
@@ -60,15 +61,15 @@ PREDICTOR_GROUPS: list[tuple[str, dict[str, str]]] = [
     ("Binary: cameras, charger", {"H6": "Y", "XGBoost": "Y"}),
     ("Facility descriptions", {"XGBoost": "Y"}),
     ("log(area), area², age², area × floor", {"H5": "Y", "H6": "Y", "XGBoost": "Y"}),
-    ("Area × district (24)", {"H5": "Y", "H6": "Y", "XGBoost": "Y"}),
+    ("Area × district", {"H5": "24", "H6": "24", "XGBoost": "25"}),
     ("Transaction type (constant here)", {"XGBoost": "Y"}),
     (
-        "Parameters or inputs",
+        "Design columns / model inputs",
         {
             "H1": "28",
             "H2": "40",
             "H3g": "47",
-            "H3c": "-",
+            "H3c": "223",
             "H4": "23 per district",
             "H5": "75",
             "Ridge": "47",
@@ -153,7 +154,7 @@ def main() -> int:
         stat, _, p = diebold_mariano_test_hac(
             x.reindex(idx).to_numpy(), m6.reindex(idx).to_numpy(), h=h
         )
-        got, want = abs(stat), DM_EXPECTED[h]
+        got, want = -stat, DM_EXPECTED[h]  # MSE(H6) - MSE(XGBoost)
         flag = "OK" if abs(got - want) <= DM_TOLERANCE else "MISMATCH"
         print(f"[appendix-c]   h={h:>2} DM={got:6.2f} (manuscript {want:.2f}) p={p:.4f} {flag}")
         if flag == "MISMATCH":

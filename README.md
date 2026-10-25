@@ -55,6 +55,8 @@ The build steps require merged transactions and fitted models. They generate bot
 
 Data, fitted models and generated outputs are supplied separately. This repository requires prepared inputs and does not include data collection or record-linkage scripts. Estimation outputs also require intermediate preparation before the exhibit scripts can use them. See [data/README.md](data/README.md) for file locations and contact details. Retrospective revisions to public transaction records may affect results from a new download.
 
+[Implementation notes](IMPLEMENTATION_NOTES.md) document the study's variable definitions, preprocessing, attribution summaries and reporting corrections of 25 October 2026. The repository is maintained on GitHub; cite a commit when referring to a specific code version.
+
 ## Code authorship and AI assistance
 
 The authors wrote the original code for this repository and the analyses reported in the article. GPT-5 was used to assist with code revision and organization. The authors take full responsibility for the work.

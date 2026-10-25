@@ -289,7 +289,7 @@ def run_all_dm_tests(
     horizons : List[int]
         Horizons to test (default: [1, 3, 6, 12])
     models : List[str]
-        Models to compare (default: all 6)
+        Models to compare (default: models with stored forecast errors)
 
     Returns
     -------
@@ -301,7 +301,11 @@ def run_all_dm_tests(
         horizons = [1, 3, 6, 12]
 
     if models is None:
-        models = ["H1", "H2", "H3", "H4", "Ridge", "XGBoost"]
+        models = list(dict.fromkeys(model for _, model, _ in window_results.forecast_errors))
+        # H3g is the reporting name for H3; avoid comparing the duplicate
+        # specification when both labels were fitted in the subsample run.
+        if "H3g" in models and "H3" in models:
+            models.remove("H3")
 
     results = []
 

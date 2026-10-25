@@ -33,7 +33,12 @@ def build(panel: str, csv: str) -> pd.DataFrame:
             if t.empty:
                 row[f"h={h}"] = "—"
                 continue
-            dm = abs(float(t.iloc[0].DM_Statistic))
+            record = t.iloc[0]
+            # Stored DM uses MSE(Model_1) - MSE(Model_2).
+            # Display MSE(linear) - MSE(XGBoost), preserving its direction.
+            dm = float(record.DM_Statistic)
+            if record.Model_1 == "XGBoost":
+                dm = -dm
             sig = str(t.iloc[0].Significance).replace("nan", "")
             row[f"h={h}"] = f"{dm:.2f}{sig}"
         rows.append(row)
